@@ -3,7 +3,7 @@
  * Plugin Name:       All-in-One Optimizer
  * Plugin URI:        https://github.com/jorsen/all-in-one-optimizer
  * Description:       Debloat, Autoptimize (defer/async), Image Lazy Load, Flying Pages prefetch, and SPA navigation — all in one lightweight plugin.
- * Version:           1.0.6
+ * Version:           1.0.7
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Jorsen Mejia
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AIO_VERSION', '1.0.6' );
+define( 'AIO_VERSION', '1.0.7' );
 define( 'AIO_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'AIO_URL',     plugin_dir_url( __FILE__ ) );
 define( 'AIO_OPTION',  'aio_optimizer_options' );
@@ -56,7 +56,7 @@ function aio_get_options(): array {
         'fly_mobile'              => 0,
         // SPA
         'spa_enable'              => 1,
-        'spa_selector'            => '#content, main, .site-main',
+        'spa_selector'            => '#content, #main-content, #primary, .site-main, .main-content, .content-area, main',
         'spa_exclude'             => '/wp-admin, /wp-login, /cart, /checkout, /my-account',
     ];
 

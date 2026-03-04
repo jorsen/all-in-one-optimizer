@@ -18,12 +18,18 @@
     // -------------------------------------------------------------------------
     // Guard: disable SPA entirely if this flag is set by error handler below.
     // -------------------------------------------------------------------------
-    if ( window.__aioSpaDisabled ) return;
+    if ( window.__aioSpaDisabled ) {
+        console.warn( '[AIO SPA] Disabled (window.__aioSpaDisabled is set).' );
+        return;
+    }
 
     const cfg       = window.aioSpaConfig || {};
-    const rawSel    = cfg.selector  || '#content, main, .site-main';
+    // Extended selector covers the most common WordPress theme content wrappers.
+    const rawSel    = cfg.selector  || '#content, #main-content, #primary, .site-main, .main-content, .content-area, main';
     const excludes  = cfg.exclude   || [];
     const adminPath = cfg.adminPath || '/wp-admin';
+
+    console.log( '[AIO SPA] Loaded. Selector:', rawSel );
 
     // Shared page cache populated by flying-pages.js.
     window.aioPageCache = window.aioPageCache || new Map();
@@ -117,6 +123,8 @@
                 if ( el ) return { el, sel };
             } catch {}
         }
+        console.warn( '[AIO SPA] No content container found for selector:', selector,
+            '— Add your theme\'s content wrapper in Settings → AIO Optimizer → SPA tab.' );
         return null;
     }
 
@@ -282,6 +290,7 @@
         if ( u.pathname === location.pathname && ! u.search && u.hash ) return;
 
         e.preventDefault();
+        console.log( '[AIO SPA] Navigating to:', a.href );
         navigate( a.href, true );
     } );
 
