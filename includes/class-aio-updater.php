@@ -35,8 +35,70 @@ class AIO_Updater {
         add_filter( 'upgrader_source_selection',             [ $this, 'fix_folder_name' ], 10, 4 );
         add_action( 'upgrader_process_complete',             [ $this, 'clear_transient' ], 10, 2 );
 
+        // Enable WordPress automatic background updates for this plugin.
+        add_filter( 'auto_update_plugin', [ $this, 'enable_auto_update' ], 10, 2 );
+
+        // Force-write update data into the stored transient on every admin load
+        // so the Plugins page always shows the Update Now button.
+        add_action( 'admin_init', [ $this, 'force_inject_stored_transient' ] );
+
         // Handle manual "Check for Updates" button.
         add_action( 'admin_post_aio_check_update', [ $this, 'handle_manual_check' ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // Enable WordPress automatic background updates
+    // -------------------------------------------------------------------------
+
+    public function enable_auto_update( $update, $item ): bool {
+        if ( isset( $item->plugin ) && $item->plugin === self::PLUGIN_FILE ) {
+            return true;
+        }
+        return (bool) $update;
+    }
+
+    // -------------------------------------------------------------------------
+    // Directly write update data into the stored update_plugins transient.
+    // This guarantees the Plugins page shows Update Now without waiting for
+    // WordPress's next background check cycle.
+    // -------------------------------------------------------------------------
+
+    public function force_inject_stored_transient(): void {
+        $release = $this->get_release();
+        if ( ! $release || ! version_compare( $release['version'], AIO_VERSION, '>' ) ) {
+            return;
+        }
+
+        $transient = get_site_transient( 'update_plugins' );
+        if ( ! is_object( $transient ) ) {
+            $transient = new stdClass();
+        }
+        if ( ! isset( $transient->response ) )  { $transient->response  = []; }
+        if ( ! isset( $transient->no_update ) ) { $transient->no_update = []; }
+        if ( ! isset( $transient->checked ) )   { $transient->checked   = []; }
+
+        // Already injected — no need to write again.
+        if ( isset( $transient->response[ self::PLUGIN_FILE ] ) &&
+             $transient->response[ self::PLUGIN_FILE ]->new_version === $release['version'] ) {
+            return;
+        }
+
+        $transient->checked[ self::PLUGIN_FILE ]  = AIO_VERSION;
+        $transient->response[ self::PLUGIN_FILE ] = (object) [
+            'id'           => 'github.com/' . self::GITHUB_USER . '/' . self::GITHUB_REPO,
+            'slug'         => self::PLUGIN_SLUG,
+            'plugin'       => self::PLUGIN_FILE,
+            'new_version'  => $release['version'],
+            'url'          => 'https://github.com/' . self::GITHUB_USER . '/' . self::GITHUB_REPO,
+            'package'      => $release['zip_url'],
+            'tested'       => get_bloginfo( 'version' ),
+            'requires_php' => '7.4',
+            'icons'        => [],
+            'banners'      => [],
+        ];
+        unset( $transient->no_update[ self::PLUGIN_FILE ] );
+
+        set_site_transient( 'update_plugins', $transient );
     }
 
     // -------------------------------------------------------------------------
