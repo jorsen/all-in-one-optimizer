@@ -151,10 +151,18 @@
     /** Re-execute <script> tags cloned into DOM via innerHTML / DOMParser. */
     function executeScripts( container ) {
         container.querySelectorAll( 'script' ).forEach( function ( inert ) {
+            // Skip external scripts already loaded by the page (avoid double-loading).
+            if ( inert.src ) return;
+
             const live = document.createElement( 'script' );
             Array.from( inert.attributes ).forEach( function ( a ) { live.setAttribute( a.name, a.value ); } );
             live.textContent = inert.textContent;
-            if ( inert.src ) live.src = inert.src;
+
+            // Wrap execution so a broken third-party inline script (e.g. gform, GTM)
+            // doesn't crash the SPA cycle or trigger the error safety-net above.
+            const original = live.textContent;
+            live.textContent = 'try{' + original + '}catch(e){console.warn("[AIO] Skipped inline script:",e.message);}';
+
             inert.parentNode.replaceChild( live, inert );
         } );
     }
