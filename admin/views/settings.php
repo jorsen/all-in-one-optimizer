@@ -67,6 +67,10 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
                     <?php esc_html_e( 'Check for Updates', 'aio-optimizer' ); ?>
                 </button>
             </form>
+
+            <button type="button" id="aio-open-tour" class="button button-small" style="margin-left:2px" title="<?php esc_attr_e( 'Open the plugin walkthrough guide', 'aio-optimizer' ); ?>">
+                <?php esc_html_e( 'View Guide', 'aio-optimizer' ); ?>
+            </button>
         </div>
     </div>
 

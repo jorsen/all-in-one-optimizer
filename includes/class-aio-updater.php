@@ -286,17 +286,34 @@ class AIO_Updater {
             return $source;
         }
 
-        $corrected = trailingslashit( $remote_source ) . self::PLUGIN_SLUG . '/';
-
-        if ( $source !== $corrected && $wp_filesystem->is_dir( $source ) ) {
-            if ( $wp_filesystem->is_dir( $corrected ) ) {
-                $wp_filesystem->delete( $corrected, true );
-            }
-            $wp_filesystem->move( $source, $corrected );
-            return $corrected;
+        // Ensure the filesystem API is ready.
+        if ( ! $wp_filesystem instanceof \WP_Filesystem_Base ) {
+            return $source;
         }
 
-        return $source;
+        // Normalise trailing slash so the comparison is reliable regardless of
+        // how WordPress passes the path (with or without trailing slash).
+        $source    = trailingslashit( $source );
+        $corrected = trailingslashit( $remote_source ) . self::PLUGIN_SLUG . '/';
+
+        // Already the right name — nothing to do.
+        if ( $source === $corrected ) {
+            return $source;
+        }
+
+        if ( ! $wp_filesystem->is_dir( $source ) ) {
+            return $source;
+        }
+
+        // Remove any stale folder at the destination so move() can succeed.
+        if ( $wp_filesystem->is_dir( $corrected ) ) {
+            $wp_filesystem->delete( $corrected, true );
+        }
+
+        // Only return the new path if the move actually succeeded; otherwise
+        // WordPress will still install to the wrong folder but at least it
+        // won't break silently.
+        return $wp_filesystem->move( $source, $corrected ) ? $corrected : $source;
     }
 
     // -------------------------------------------------------------------------
