@@ -61,6 +61,7 @@ class AIO_Admin {
             return;
         }
         wp_enqueue_style( 'aio-admin', AIO_URL . 'assets/css/admin.css', [], AIO_VERSION );
+        wp_enqueue_script( 'aio-admin', AIO_URL . 'assets/js/admin.js', [], AIO_VERSION, true );
     }
 
     public function render_page(): void {

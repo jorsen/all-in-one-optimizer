@@ -20,9 +20,10 @@
     // -------------------------------------------------------------------------
     if ( window.__aioSpaDisabled ) return;
 
-    const cfg      = window.aioSpaConfig || {};
-    const rawSel   = cfg.selector || '#content, main, .site-main';
-    const excludes = cfg.exclude  || [];
+    const cfg       = window.aioSpaConfig || {};
+    const rawSel    = cfg.selector  || '#content, main, .site-main';
+    const excludes  = cfg.exclude   || [];
+    const adminPath = cfg.adminPath || '/wp-admin';
 
     // Shared page cache populated by flying-pages.js.
     window.aioPageCache = window.aioPageCache || new Map();
@@ -127,6 +128,8 @@
     function isExcluded( url ) {
         try {
             const p = new URL( url, location.href ).pathname;
+            // Always exclude admin pages, using the dynamic path from PHP.
+            if ( p.startsWith( adminPath ) ) return true;
             return excludes.some( function ( pat ) { return p.startsWith( pat.trim() ); } );
         } catch { return false; }
     }

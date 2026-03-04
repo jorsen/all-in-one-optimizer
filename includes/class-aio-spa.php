@@ -51,10 +51,15 @@ class AIO_SPA {
                 explode( ',', $exclude_raw )
             ) ) );
 
+            // Pass the admin URL path so spa.js can exclude admin pages even
+            // when WordPress is installed in a subdirectory (e.g. /blog/wp-admin).
+            $admin_path = wp_parse_url( admin_url( '/' ), PHP_URL_PATH );
+
             wp_localize_script( 'aio-spa', 'aioSpaConfig', [
-                'selector' => sanitize_text_field( $this->opts['spa_selector'] ),
-                'exclude'  => $excludes,
-                'home'     => home_url( '/' ),
+                'selector'  => sanitize_text_field( $this->opts['spa_selector'] ),
+                'exclude'   => $excludes,
+                'home'      => home_url( '/' ),
+                'adminPath' => $admin_path,
             ] );
         }
 

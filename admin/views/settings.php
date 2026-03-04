@@ -1,23 +1,53 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-$opts    = aio_get_options();
-$active  = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'debloat';
-$tabs    = [
-    'debloat'       => __( 'Debloat', 'aio-optimizer' ),
-    'autoptimize'   => __( 'Autoptimize', 'aio-optimizer' ),
-    'lazyload'      => __( 'Lazy Load', 'aio-optimizer' ),
-    'flyingpages'   => __( 'Flying Pages', 'aio-optimizer' ),
-    'flyingimages'  => __( 'Flying Images', 'aio-optimizer' ),
-    'spa'           => __( 'SPA', 'aio-optimizer' ),
+$opts   = aio_get_options();
+$active = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'debloat';
+$tabs   = [
+    'debloat'      => __( 'Debloat', 'aio-optimizer' ),
+    'autoptimize'  => __( 'Autoptimize', 'aio-optimizer' ),
+    'lazyload'     => __( 'Lazy Load', 'aio-optimizer' ),
+    'flyingpages'  => __( 'Flying Pages', 'aio-optimizer' ),
+    'flyingimages' => __( 'Flying Images', 'aio-optimizer' ),
+    'spa'          => __( 'SPA', 'aio-optimizer' ),
 ];
+
+// Build tab URLs explicitly so they survive form-save redirects.
+$base_url = admin_url( 'options-general.php?page=aio-optimizer' );
 ?>
 <div class="wrap aio-wrap">
     <h1><?php esc_html_e( 'All-in-One Optimizer', 'aio-optimizer' ); ?></h1>
 
+    <?php // ================================================================
+          // PRESET BAR
+          // ================================================================ ?>
+    <div class="aio-preset-bar">
+        <span class="aio-preset-label"><?php esc_html_e( 'Quick Preset:', 'aio-optimizer' ); ?></span>
+
+        <button type="button" class="aio-preset-btn button" data-preset="safe">
+            <?php esc_html_e( 'Safe', 'aio-optimizer' ); ?>
+            <span class="aio-preset-tag"><?php esc_html_e( 'Debloat only', 'aio-optimizer' ); ?></span>
+        </button>
+
+        <button type="button" class="aio-preset-btn button" data-preset="balanced">
+            <?php esc_html_e( 'Balanced', 'aio-optimizer' ); ?>
+            <span class="aio-preset-tag"><?php esc_html_e( '+ Defer + Lazy + Prefetch', 'aio-optimizer' ); ?></span>
+        </button>
+
+        <button type="button" class="aio-preset-btn button button-primary" data-preset="full">
+            <?php esc_html_e( 'Full Performance', 'aio-optimizer' ); ?>
+            <span class="aio-preset-tag"><?php esc_html_e( 'Everything on', 'aio-optimizer' ); ?></span>
+        </button>
+
+        <span id="aio-preset-notice" class="aio-preset-notice" style="display:none"></span>
+    </div>
+
+    <?php // ================================================================
+          // TABS
+          // ================================================================ ?>
     <nav class="aio-tabs">
         <?php foreach ( $tabs as $slug => $label ) : ?>
-            <a href="<?php echo esc_url( add_query_arg( 'tab', $slug ) ); ?>"
+            <a href="<?php echo esc_url( $base_url . '&tab=' . $slug ); ?>"
                class="aio-tab<?php echo $active === $slug ? ' aio-tab--active' : ''; ?>">
                 <?php echo esc_html( $label ); ?>
             </a>
@@ -37,7 +67,7 @@ $tabs    = [
             <table class="form-table" role="presentation">
                 <?php
                 $debloat_opts = [
-                    'debloat_emoji'          => __( 'Remove Emoji scripts & styles', 'aio-optimizer' ),
+                    'debloat_emoji'          => __( 'Remove Emoji scripts &amp; styles', 'aio-optimizer' ),
                     'debloat_jquery_migrate' => __( 'Remove jQuery Migrate', 'aio-optimizer' ),
                     'debloat_xmlrpc'         => __( 'Disable XML-RPC', 'aio-optimizer' ),
                     'debloat_generator'      => __( 'Remove &lt;meta name="generator"&gt;', 'aio-optimizer' ),
@@ -52,7 +82,7 @@ $tabs    = [
                 ];
                 foreach ( $debloat_opts as $key => $label ) : ?>
                 <tr>
-                    <th scope="row"><?php echo wp_kses( $label, [ 'meta' => [], 'a' => [] ] ); ?></th>
+                    <th scope="row"><?php echo wp_kses( $label, [] ); ?></th>
                     <td>
                         <label>
                             <input type="checkbox"
@@ -73,7 +103,7 @@ $tabs    = [
         <?php elseif ( 'autoptimize' === $active ) : ?>
         <div class="aio-card">
             <h2><?php esc_html_e( 'Autoptimize JS / CSS', 'aio-optimizer' ); ?></h2>
-            <p class="description"><?php esc_html_e( 'Optimize how scripts and styles are loaded — no file rewriting required. Excludes can be configured per-handle.', 'aio-optimizer' ); ?></p>
+            <p class="description"><?php esc_html_e( 'Optimize how scripts and styles are loaded — no file rewriting required.', 'aio-optimizer' ); ?></p>
             <table class="form-table" role="presentation">
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Defer JS', 'aio-optimizer' ); ?></th>
@@ -129,8 +159,8 @@ $tabs    = [
               // ================================================================ ?>
         <?php elseif ( 'lazyload' === $active ) : ?>
         <div class="aio-card">
-            <h2><?php esc_html_e( 'Image & iFrame Lazy Load', 'aio-optimizer' ); ?></h2>
-            <p class="description"><?php esc_html_e( 'Replaces src with data-src and loads via IntersectionObserver. Falls back to immediate load if IntersectionObserver is unavailable. &lt;noscript&gt; tags added for non-JS browsers.', 'aio-optimizer' ); ?></p>
+            <h2><?php esc_html_e( 'Image &amp; iFrame Lazy Load', 'aio-optimizer' ); ?></h2>
+            <p class="description"><?php esc_html_e( 'Replaces src with data-src and loads via IntersectionObserver. Adds &lt;noscript&gt; for non-JS browsers.', 'aio-optimizer' ); ?></p>
             <table class="form-table" role="presentation">
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Lazy load images', 'aio-optimizer' ); ?></th>
@@ -164,14 +194,14 @@ $tabs    = [
                     <td>
                         <label>
                             <input type="checkbox" name="<?php echo esc_attr( AIO_OPTION . '[lazy_skip_first]' ); ?>" value="1" <?php checked( 1, $opts['lazy_skip_first'] ); ?>>
-                            <?php esc_html_e( 'Skip the first image on the page (usually the LCP / hero image)', 'aio-optimizer' ); ?>
+                            <?php esc_html_e( 'Skip the first image (usually the LCP / hero image)', 'aio-optimizer' ); ?>
                         </label>
                     </td>
                 </tr>
             </table>
             <div class="aio-notice aio-notice--info">
                 <strong><?php esc_html_e( 'Note:', 'aio-optimizer' ); ?></strong>
-                <?php esc_html_e( 'Lazy load is automatically disabled if a conflicting plugin (Smush, EWWW, Rocket Lazy Load, etc.) is detected.', 'aio-optimizer' ); ?>
+                <?php esc_html_e( 'Auto-disabled if a conflicting plugin is detected (Smush, EWWW, Rocket Lazy Load, etc.).', 'aio-optimizer' ); ?>
             </div>
         </div>
 
@@ -181,7 +211,7 @@ $tabs    = [
         <?php elseif ( 'flyingpages' === $active ) : ?>
         <div class="aio-card">
             <h2><?php esc_html_e( 'Flying Pages — Link Prefetch', 'aio-optimizer' ); ?></h2>
-            <p class="description"><?php esc_html_e( 'Uses the fetch API to preload pages when a user hovers over links. Pre-warmed pages are consumed instantly by the SPA module — no second request needed.', 'aio-optimizer' ); ?></p>
+            <p class="description"><?php esc_html_e( 'Fetches pages in the background on hover. Pre-warmed pages are served instantly by the SPA module.', 'aio-optimizer' ); ?></p>
             <table class="form-table" role="presentation">
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Enable Flying Pages', 'aio-optimizer' ); ?></th>
@@ -199,7 +229,7 @@ $tabs    = [
                                name="<?php echo esc_attr( AIO_OPTION . '[fly_delay]' ); ?>"
                                value="<?php echo esc_attr( $opts['fly_delay'] ); ?>"
                                class="small-text">
-                        <p class="description"><?php esc_html_e( 'Milliseconds to wait after hover before prefetch fires. 0 = instant. Default: 65.', 'aio-optimizer' ); ?></p>
+                        <p class="description"><?php esc_html_e( 'Milliseconds before prefetch fires after hover. 0 = instant. Default: 65.', 'aio-optimizer' ); ?></p>
                     </td>
                 </tr>
                 <tr>
@@ -207,15 +237,11 @@ $tabs    = [
                     <td>
                         <label>
                             <input type="checkbox" name="<?php echo esc_attr( AIO_OPTION . '[fly_mobile]' ); ?>" value="1" <?php checked( 1, $opts['fly_mobile'] ); ?>>
-                            <?php esc_html_e( 'Prefetch on touchstart for mobile devices (uses more data)', 'aio-optimizer' ); ?>
+                            <?php esc_html_e( 'Prefetch on touchstart for mobile (uses more data)', 'aio-optimizer' ); ?>
                         </label>
                     </td>
                 </tr>
             </table>
-            <div class="aio-notice aio-notice--info">
-                <strong><?php esc_html_e( 'Performance:', 'aio-optimizer' ); ?></strong>
-                <?php esc_html_e( 'Prefetch uses requestIdleCallback so it never blocks rendering. Automatically skipped on Save-Data connections and slow 2G networks.', 'aio-optimizer' ); ?>
-            </div>
         </div>
 
         <?php // ================================================================
@@ -224,7 +250,7 @@ $tabs    = [
         <?php elseif ( 'flyingimages' === $active ) : ?>
         <div class="aio-card">
             <h2><?php esc_html_e( 'Flying Images — Shared Element Transitions', 'aio-optimizer' ); ?></h2>
-            <p class="description"><?php esc_html_e( 'When navigating between pages via SPA, images that appear on both pages animate from their old position to their new position — creating a seamless visual continuity effect. Works with any theme by detecting &lt;img&gt; tags dynamically.', 'aio-optimizer' ); ?></p>
+            <p class="description"><?php esc_html_e( 'Images that appear on both the current and next page animate from their old position to the new one during SPA navigation.', 'aio-optimizer' ); ?></p>
             <table class="form-table" role="presentation">
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Enable Flying Images', 'aio-optimizer' ); ?></th>
@@ -233,14 +259,10 @@ $tabs    = [
                             <input type="checkbox" name="<?php echo esc_attr( AIO_OPTION . '[fly_images]' ); ?>" value="1" <?php checked( 1, $opts['fly_images'] ?? 1 ); ?>>
                             <?php esc_html_e( 'Animate shared images between SPA page transitions', 'aio-optimizer' ); ?>
                         </label>
-                        <p class="description"><?php esc_html_e( 'Requires SPA navigation to be enabled. Automatically respects prefers-reduced-motion.', 'aio-optimizer' ); ?></p>
+                        <p class="description"><?php esc_html_e( 'Requires SPA navigation to be enabled. Respects prefers-reduced-motion.', 'aio-optimizer' ); ?></p>
                     </td>
                 </tr>
             </table>
-            <div class="aio-notice aio-notice--info">
-                <strong><?php esc_html_e( 'How it works:', 'aio-optimizer' ); ?></strong>
-                <?php esc_html_e( 'Images are matched by src across pages. When the same image appears in a new page at a different size or position, it flies from the old location to the new one using a CSS transform animation. Image bitmaps are also cached in memory to prevent re-decoding.', 'aio-optimizer' ); ?>
-            </div>
         </div>
 
         <?php // ================================================================
@@ -249,7 +271,7 @@ $tabs    = [
         <?php elseif ( 'spa' === $active ) : ?>
         <div class="aio-card">
             <h2><?php esc_html_e( 'SPA Navigation', 'aio-optimizer' ); ?></h2>
-            <p class="description"><?php esc_html_e( 'Fetch and swap page content without a full browser reload. Includes smooth fade transitions, a progress bar, and automatic fallback to normal navigation on errors.', 'aio-optimizer' ); ?></p>
+            <p class="description"><?php esc_html_e( 'Intercepts link clicks and swaps page content via fetch — no full reload. Includes fade transitions, a progress bar, and automatic fallback on errors.', 'aio-optimizer' ); ?></p>
             <table class="form-table" role="presentation">
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Enable SPA', 'aio-optimizer' ); ?></th>
@@ -267,7 +289,7 @@ $tabs    = [
                                name="<?php echo esc_attr( AIO_OPTION . '[spa_selector]' ); ?>"
                                value="<?php echo esc_attr( $opts['spa_selector'] ); ?>"
                                class="regular-text">
-                        <p class="description"><?php esc_html_e( 'Comma-separated CSS selectors for the main content area (first match wins). E.g. #content, main, .site-main', 'aio-optimizer' ); ?></p>
+                        <p class="description"><?php esc_html_e( 'Comma-separated CSS selectors (first match wins). E.g. #content, main, .site-main', 'aio-optimizer' ); ?></p>
                     </td>
                 </tr>
                 <tr>
@@ -276,13 +298,13 @@ $tabs    = [
                         <textarea id="spa_exclude"
                                   name="<?php echo esc_attr( AIO_OPTION . '[spa_exclude]' ); ?>"
                                   rows="5" class="large-text"><?php echo esc_textarea( $opts['spa_exclude'] ); ?></textarea>
-                        <p class="description"><?php esc_html_e( 'Comma-separated URL path prefixes to exclude from SPA navigation. E.g. /wp-admin, /cart, /checkout', 'aio-optimizer' ); ?></p>
+                        <p class="description"><?php esc_html_e( 'Comma-separated URL path prefixes to exclude. E.g. /wp-admin, /cart, /checkout', 'aio-optimizer' ); ?></p>
                     </td>
                 </tr>
             </table>
             <div class="aio-notice aio-notice--info">
-                <strong><?php esc_html_e( 'Escape hatches:', 'aio-optimizer' ); ?></strong>
-                <?php esc_html_e( 'Add data-no-spa to any &lt;a&gt; tag to skip SPA for that link. SPA automatically disables itself if a JS error occurs, ensuring the site always works.', 'aio-optimizer' ); ?>
+                <strong><?php esc_html_e( 'Escape hatch:', 'aio-optimizer' ); ?></strong>
+                <?php esc_html_e( 'Add data-no-spa to any &lt;a&gt; tag to force a normal page load for that link.', 'aio-optimizer' ); ?>
             </div>
         </div>
         <?php endif; ?>
