@@ -2,7 +2,7 @@
  * AIO SPA — fetch-based single-page navigation for WordPress.
  *
  * – Consumes the window.aioPageCache pre-warmed by flying-pages.js
- * – Smooth fade transition between pages
+ * – Smooth page transitions (View Transitions API → fade fallback)
  * – Thin progress bar (zero dependencies)
  * – Re-executes inline <script> tags in swapped content
  * – Fires `aio:before-navigate` before swap, `aio:navigate` after
@@ -23,11 +23,12 @@
         return;
     }
 
-    const cfg       = window.aioSpaConfig || {};
+    const cfg          = window.aioSpaConfig || {};
     // Extended selector covers the most common WordPress theme content wrappers.
-    const rawSel    = cfg.selector  || '#content, #main-content, #primary, .site-main, .main-content, .content-area, main';
-    const excludes  = cfg.exclude   || [];
-    const adminPath = cfg.adminPath || '/wp-admin';
+    const rawSel       = cfg.selector  || '#content, #main-content, #primary, .site-main, .main-content, .content-area, main';
+    const excludes     = cfg.exclude   || [];
+    const adminPath    = cfg.adminPath || '/wp-admin';
+    const REDUCED_MOTION = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
     console.log( '[AIO SPA] Loaded. Selector:', rawSel );
 
@@ -36,14 +37,13 @@
     const cache = window.aioPageCache;
 
     // -------------------------------------------------------------------------
-    // Progress bar
+    // Progress bar + preloader + View Transitions API styles
     // -------------------------------------------------------------------------
 
-    const BAR_ID = 'aio-progress';
-
+    const BAR_ID    = 'aio-progress';
     const LOADER_ID = 'aio-preloader';
 
-    ( function injectBarStyles() {
+    ( function injectStyles() {
         const s = document.createElement( 'style' );
         s.textContent = `
             #${BAR_ID}{position:fixed;top:0;left:0;height:3px;width:0;
@@ -68,6 +68,16 @@
                 0%{left:-45%;width:45%}
                 50%{left:35%;width:35%}
                 100%{left:110%;width:45%}}
+
+            @media(prefers-reduced-motion:no-preference){
+                ::view-transition-old(root){
+                    animation:180ms ease-out both aio-vt-out}
+                ::view-transition-new(root){
+                    animation:280ms ease-out both aio-vt-in}
+                @keyframes aio-vt-out{
+                    to{opacity:0;transform:translateY(-6px) scale(.99)}}
+                @keyframes aio-vt-in{
+                    from{opacity:0;transform:translateY(8px)}}}
         `;
         document.head.appendChild( s );
     } )();
@@ -99,7 +109,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Preloader spinner
+    // Preloader line
     // -------------------------------------------------------------------------
 
     let loaderTimer = null;
@@ -128,7 +138,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Fade transition helpers
+    // Fade transition helpers (fallback for browsers without View Transitions API)
     // -------------------------------------------------------------------------
 
     function fadeOut( el ) {
@@ -146,7 +156,7 @@
 
     function fadeIn( el ) {
         el.style.opacity    = '0';
-        el.style.transition = 'opacity 0.2s ease';
+        el.style.transition = 'opacity 0.25s ease';
         requestAnimationFrame( function () {
             requestAnimationFrame( function () {
                 el.style.opacity = '1';
@@ -197,6 +207,7 @@
         } catch { return false; }
     }
 
+    /** Update <meta name="..."> in <head>. */
     function updateMeta( name, content ) {
         if ( ! content ) return;
         let el = document.querySelector( 'meta[name="' + name + '"]' );
@@ -204,11 +215,32 @@
         el.setAttribute( 'content', content );
     }
 
+    /** Update <meta property="og:..."> in <head>. */
+    function updateOgMeta( prop, content ) {
+        if ( ! content ) return;
+        let el = document.querySelector( 'meta[property="' + prop + '"]' );
+        if ( ! el ) { el = document.createElement( 'meta' ); el.setAttribute( 'property', prop ); document.head.appendChild( el ); }
+        el.setAttribute( 'content', content );
+    }
+
+    /** Update <link rel="canonical"> in <head>. */
+    function updateCanonical( newDoc ) {
+        const newCanon = newDoc.querySelector( 'link[rel="canonical"]' );
+        if ( ! newCanon ) return;
+        let canon = document.querySelector( 'link[rel="canonical"]' );
+        if ( ! canon ) { canon = document.createElement( 'link' ); canon.rel = 'canonical'; document.head.appendChild( canon ); }
+        canon.href = newCanon.href;
+    }
+
     /** Re-execute <script> tags cloned into DOM via innerHTML / DOMParser. */
     function executeScripts( container ) {
         container.querySelectorAll( 'script' ).forEach( function ( inert ) {
             // Skip external scripts already loaded by the page (avoid double-loading).
             if ( inert.src ) return;
+
+            // Skip scripts with a non-JS type (e.g. application/ld+json, text/template).
+            const t = inert.getAttribute( 'type' );
+            if ( t && t !== 'text/javascript' && t !== 'module' ) return;
 
             // Skip Gravity Forms init scripts — they reference global `gform` state
             // that is already initialised and cannot be re-run after a SPA swap.
@@ -309,21 +341,42 @@
                 bubbles: true,
             } ) );
 
-            // Fade out current content.
-            await fadeOut( current.el );
+            // ── DOM swap: use View Transitions API for a smooth animation when
+            // supported; fall back to a simple fade for older browsers.
+            const doSwap = function () {
+                current.el.innerHTML = newContent.el.innerHTML;
+                heroSwaps.forEach( function ( swap ) {
+                    try { swap.cur.outerHTML = swap.html; } catch ( e ) {}
+                } );
+            };
 
-            // Swap main content.
-            current.el.innerHTML = newContent.el.innerHTML;
+            if ( document.startViewTransition && ! REDUCED_MOTION ) {
+                // VTA: browser captures old state → doSwap() → captures new state → animates.
+                const vt = document.startViewTransition( doSwap );
+                // Wait until the animation has started (DOM is already updated at this point).
+                await vt.ready;
+            } else {
+                // Fallback: manual fade out → swap → fade in.
+                await fadeOut( current.el );
+                doSwap();
+                fadeIn( current.el );
+            }
 
-            // Apply hero co-swaps.
-            heroSwaps.forEach( function ( swap ) {
-                try { swap.cur.outerHTML = swap.html; } catch ( e ) {}
-            } );
-
-            // Update head.
+            // ── Update <head> ──
             document.title = newDoc.title;
+
+            // Standard meta.
             const desc = newDoc.querySelector( 'meta[name="description"]' );
             updateMeta( 'description', desc?.getAttribute( 'content' ) );
+
+            // Open Graph tags (important for social sharing and some SEO plugins).
+            [ 'og:title', 'og:description', 'og:url', 'og:image' ].forEach( function ( prop ) {
+                const m = newDoc.querySelector( 'meta[property="' + prop + '"]' );
+                if ( m ) updateOgMeta( prop, m.getAttribute( 'content' ) );
+            } );
+
+            // Canonical URL.
+            updateCanonical( newDoc );
 
             if ( pushState ) {
                 history.pushState( { url: canonical }, newDoc.title, canonical );
@@ -338,16 +391,18 @@
                 window.scrollTo( 0, 0 );
             }
 
-            // Fade in new content.
             hideLoader();
-            fadeIn( current.el );
             finishBar();
 
-            // Re-run scripts (non-critical: use rIC).
+            // Re-run inline scripts (non-critical: use rIC so it doesn't block paint).
             const idle = window.requestIdleCallback || function ( fn ) { setTimeout( fn, 0 ); };
             idle( function () { executeScripts( current.el ); } );
 
-            // Notify other modules.
+            // Fire a resize event so layout-dependent plugins (sliders, masonry,
+            // sticky elements) recalculate their dimensions after the swap.
+            window.dispatchEvent( new Event( 'resize' ) );
+
+            // Notify other modules (lazy-load.js, flying-images.js, custom code).
             document.dispatchEvent( new CustomEvent( 'aio:navigate', {
                 detail: { url: canonical, title: newDoc.title },
                 bubbles: true,

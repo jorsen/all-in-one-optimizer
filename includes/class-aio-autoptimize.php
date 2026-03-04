@@ -6,6 +6,17 @@ class AIO_Autoptimize {
     private array $opts;
     private array $excluded = [];
 
+    /**
+     * WordPress core handles that must never be deferred or moved,
+     * regardless of user settings. Other plugins depend on these being
+     * available synchronously before their own scripts execute.
+     */
+    private const SAFE_HANDLES = [
+        'jquery', 'jquery-core', 'jquery-migrate',
+        'wp-polyfill', 'regenerator-runtime',
+        'wp-hooks', 'wp-i18n', 'wp-dom-ready',
+    ];
+
     public function __construct( array $opts ) {
         $this->opts = $opts;
 
@@ -41,8 +52,8 @@ class AIO_Autoptimize {
     // -------------------------------------------------------------------------
 
     public function add_script_attributes( string $tag, string $handle ): string {
-        // Never touch excluded handles or inline scripts.
-        if ( in_array( $handle, $this->excluded, true ) ) {
+        // Never touch excluded handles or WordPress core critical handles.
+        if ( in_array( $handle, $this->excluded, true ) || in_array( $handle, self::SAFE_HANDLES, true ) ) {
             return $tag;
         }
 
@@ -75,7 +86,7 @@ class AIO_Autoptimize {
         }
 
         foreach ( $wp_scripts->queue as $handle ) {
-            if ( in_array( $handle, $this->excluded, true ) ) {
+            if ( in_array( $handle, $this->excluded, true ) || in_array( $handle, self::SAFE_HANDLES, true ) ) {
                 continue;
             }
             if ( isset( $wp_scripts->registered[ $handle ] ) ) {
