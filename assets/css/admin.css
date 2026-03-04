@@ -1,0 +1,98 @@
+/* AIO Optimizer — Admin Styles */
+
+.aio-wrap h1 {
+    margin-bottom: 8px;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.aio-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 2px solid #c3c4c7;
+    margin: 16px 0 0;
+}
+
+.aio-tab {
+    display: inline-block;
+    padding: 8px 18px;
+    background: #f0f0f1;
+    border: 1px solid #c3c4c7;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    color: #50575e;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+
+.aio-tab:hover {
+    background: #fff;
+    color: #135e96;
+}
+
+.aio-tab--active {
+    background: #fff;
+    color: #135e96;
+    border-bottom: 2px solid #fff;
+    margin-bottom: -2px;
+    font-weight: 600;
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
+.aio-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 0 4px 4px 4px;
+    padding: 20px 24px 8px;
+    margin: 0 0 16px;
+}
+
+.aio-card h2 {
+    font-size: 16px;
+    margin: 0 0 4px;
+    padding: 0;
+    border: none;
+}
+
+.aio-card .description {
+    color: #646970;
+    margin: 0 0 16px;
+    font-size: 13px;
+}
+
+/* ── Notice ───────────────────────────────────────────────────────────────── */
+.aio-notice {
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin: 12px 0 8px;
+}
+
+.aio-notice--info {
+    background: #f0f6fc;
+    border-left: 4px solid #72aee6;
+    color: #2c5282;
+}
+
+/* ── Form table tweaks ────────────────────────────────────────────────────── */
+.aio-wrap .form-table th {
+    width: 260px;
+    padding: 10px 0;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.aio-wrap .form-table td {
+    padding: 8px 0;
+}
+
+.aio-wrap input[type="text"],
+.aio-wrap input[type="number"],
+.aio-wrap textarea {
+    border-radius: 4px;
+}
+
+.aio-wrap .submit {
+    padding-left: 0;
+}
