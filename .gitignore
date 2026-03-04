@@ -1,0 +1,10 @@
+# Claude Code local settings (may contain tokens/secrets)
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
