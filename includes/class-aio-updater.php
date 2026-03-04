@@ -30,6 +30,7 @@ class AIO_Updater {
 
     public function init(): void {
         add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'inject_update' ] );
+        add_filter( 'site_transient_update_plugins',         [ $this, 'inject_update' ] ); // also fires on reads (Plugins page)
         add_filter( 'plugins_api',                           [ $this, 'plugin_info' ], 20, 3 );
         add_filter( 'upgrader_source_selection',             [ $this, 'fix_folder_name' ], 10, 4 );
         add_action( 'upgrader_process_complete',             [ $this, 'clear_transient' ], 10, 2 );
