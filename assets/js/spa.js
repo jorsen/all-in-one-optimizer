@@ -216,21 +216,28 @@
 
             if ( ! newContent ) { location.href = url; return; }
 
-            const _p = newContent.el.parentElement;
-            console.log(
-                '[AIO SPA] Fetched doc matched:', newContent.sel,
-                '| innerHTML length:', newContent.el.innerHTML.length,
-                '| el:', newContent.el.tagName + ( newContent.el.id ? '#' + newContent.el.id : '' ) + ( newContent.el.className ? '.' + String( newContent.el.className ).split( ' ' )[0] : '' ),
-                '| parent:', _p ? ( _p.tagName + ( _p.id ? '#' + _p.id : '' ) + ( _p.className ? '.' + String( _p.className ).split( ' ' )[0] : '' ) ) : 'none'
-            );
-
             const current = queryContent( document, newContent.sel );
             if ( ! current ) { location.href = url; return; }
 
-            console.log(
-                '[AIO SPA] Current doc matched:', current.sel,
-                '| el:', current.el.tagName + ( current.el.id ? '#' + current.el.id : '' ) + ( current.el.className ? '.' + String( current.el.className ).split( ' ' )[0] : '' )
-            );
+            // ── Co-swap: also update hero/banner sections that live OUTSIDE
+            // the main content container (e.g. .page-header sibling sections).
+            // Collect references BEFORE any DOM mutation.
+            const HERO_SELS = '.page-header, .hero-section, .page-hero, .post-hero, .site-hero, .entry-banner';
+            const heroSwaps = [];
+            document.querySelectorAll( HERO_SELS ).forEach( function ( curEl ) {
+                if ( current.el.contains( curEl ) ) return; // already inside swap zone
+                // Build a selector that uniquely identifies this element in the new doc.
+                const elSel = curEl.id
+                    ? '#' + curEl.id
+                    : curEl.tagName.toLowerCase() + ( curEl.classList.length ? '.' + curEl.classList[0] : '' );
+                try {
+                    const newEl = newDoc.querySelector( elSel );
+                    if ( newEl ) {
+                        heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
+                        console.log( '[AIO SPA] Co-swap queued:', elSel );
+                    }
+                } catch ( e ) {}
+            } );
 
             // Fire before-navigate so flying-images.js can capture positions.
             document.dispatchEvent( new CustomEvent( 'aio:before-navigate', {
@@ -241,9 +248,13 @@
             // Fade out current content.
             await fadeOut( current.el );
 
-            // Swap.
+            // Swap main content.
             current.el.innerHTML = newContent.el.innerHTML;
-            console.log( '[AIO SPA] Swap done. New innerHTML length:', current.el.innerHTML.length );
+
+            // Apply hero co-swaps.
+            heroSwaps.forEach( function ( swap ) {
+                try { swap.cur.outerHTML = swap.html; } catch ( e ) {}
+            } );
 
             // Update head.
             document.title = newDoc.title;
