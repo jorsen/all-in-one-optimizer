@@ -30,7 +30,7 @@ class AIO_Updater {
 
     public function init(): void {
         add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'inject_update' ] );
-        add_filter( 'site_transient_update_plugins',         [ $this, 'inject_update' ] ); // also fires on reads (Plugins page)
+        add_filter( 'site_transient_update_plugins',         [ $this, 'inject_update_read' ] );
         add_filter( 'plugins_api',                           [ $this, 'plugin_info' ], 20, 3 );
         add_filter( 'upgrader_source_selection',             [ $this, 'fix_folder_name' ], 10, 4 );
         add_action( 'upgrader_process_complete',             [ $this, 'clear_transient' ], 10, 2 );
@@ -101,13 +101,39 @@ class AIO_Updater {
 
     // -------------------------------------------------------------------------
     // Inject update data into WordPress's plugin update transient
+    // Called on pre_set_ (WP update check) — requires checked[] to be present.
     // -------------------------------------------------------------------------
 
     public function inject_update( $transient ) {
         if ( empty( $transient->checked ) ) {
             return $transient;
         }
+        return $this->do_inject( $transient );
+    }
 
+    // -------------------------------------------------------------------------
+    // Inject update data when the transient is READ (Plugins page).
+    // No checked[] guard — initialises the transient object if needed.
+    // -------------------------------------------------------------------------
+
+    public function inject_update_read( $transient ) {
+        if ( ! is_object( $transient ) ) {
+            $transient = new stdClass();
+        }
+        if ( ! isset( $transient->response ) ) {
+            $transient->response  = [];
+        }
+        if ( ! isset( $transient->no_update ) ) {
+            $transient->no_update = [];
+        }
+        return $this->do_inject( $transient );
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared injection logic
+    // -------------------------------------------------------------------------
+
+    private function do_inject( $transient ) {
         $release = $this->get_release();
         if ( ! $release ) {
             return $transient;
