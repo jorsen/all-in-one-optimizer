@@ -126,6 +126,11 @@ class AIO_Updater {
         if ( ! isset( $transient->no_update ) ) {
             $transient->no_update = [];
         }
+        // WordPress uses checked[] to know the currently installed version.
+        if ( ! isset( $transient->checked ) ) {
+            $transient->checked = [];
+        }
+        $transient->checked[ self::PLUGIN_FILE ] = AIO_VERSION;
         return $this->do_inject( $transient );
     }
 
@@ -191,7 +196,7 @@ class AIO_Updater {
             'name'          => 'All-in-One Optimizer',
             'slug'          => self::PLUGIN_SLUG,
             'version'       => $release['version'],
-            'author'        => 'Your Name',
+            'author'        => 'Jorsen Mejia',
             'homepage'      => 'https://github.com/' . self::GITHUB_USER . '/' . self::GITHUB_REPO,
             'requires'      => '5.8',
             'requires_php'  => '7.4',

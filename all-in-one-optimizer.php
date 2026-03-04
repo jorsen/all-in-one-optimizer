@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name:       All-in-One Optimizer
- * Plugin URI:        https://github.com/your-repo/all-in-one-optimizer
+ * Plugin URI:        https://github.com/jorsen/all-in-one-optimizer
  * Description:       Debloat, Autoptimize (defer/async), Image Lazy Load, Flying Pages prefetch, and SPA navigation — all in one lightweight plugin.
- * Version:           1.0.3
+ * Version:           1.0.4
  * Requires at least: 5.8
  * Requires PHP:      7.4
- * Author:            Your Name
+ * Author:            Jorsen Mejia
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       aio-optimizer
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AIO_VERSION', '1.0.3' );
+define( 'AIO_VERSION', '1.0.4' );
 define( 'AIO_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'AIO_URL',     plugin_dir_url( __FILE__ ) );
 define( 'AIO_OPTION',  'aio_optimizer_options' );
