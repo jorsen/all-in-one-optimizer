@@ -53,20 +53,21 @@
             #${BAR_ID}.done{width:100%;opacity:0}
 
             #${LOADER_ID}{
-                position:fixed;inset:0;z-index:99998;
-                display:flex;align-items:center;justify-content:center;
-                background:rgba(255,255,255,0.55);
-                backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+                position:fixed;top:0;left:0;width:100%;height:4px;
+                z-index:100000;overflow:hidden;
                 opacity:0;pointer-events:none;
-                transition:opacity .2s ease}
-            #${LOADER_ID}.active{opacity:1;pointer-events:all}
-            #${LOADER_ID} .aio-spinner{
-                width:44px;height:44px;
-                border:3px solid rgba(0,115,170,.18);
-                border-top-color:var(--aio-bar-color,#0073aa);
-                border-radius:50%;
-                animation:aio-spin .75s linear infinite}
-            @keyframes aio-spin{to{transform:rotate(360deg)}}
+                transition:opacity .15s ease}
+            #${LOADER_ID}.active{opacity:1}
+            #${LOADER_ID}::after{
+                content:'';position:absolute;top:0;left:-45%;
+                width:45%;height:100%;
+                background:var(--aio-bar-color,#0073aa);
+                border-radius:0 2px 2px 0;
+                animation:aio-line 1s cubic-bezier(.4,0,.6,1) infinite}
+            @keyframes aio-line{
+                0%{left:-45%;width:45%}
+                50%{left:35%;width:35%}
+                100%{left:110%;width:45%}}
         `;
         document.head.appendChild( s );
     } )();
@@ -107,7 +108,6 @@
         return document.getElementById( LOADER_ID ) || ( function () {
             const el  = document.createElement( 'div' );
             el.id     = LOADER_ID;
-            el.innerHTML = '<div class="aio-spinner"></div>';
             document.body.appendChild( el );
             return el;
         } )();
