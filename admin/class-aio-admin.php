@@ -9,6 +9,12 @@ class AIO_Admin {
         // adding another admin_init hook (nested hooks at the same priority don't fire).
         $this->register_settings();
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+
+        // When settings are saved, clear the cached GitHub release data so the
+        // next settings page load always performs a fresh update check.
+        if ( ! empty( $_GET['settings-updated'] ) && class_exists( 'AIO_Updater' ) ) {
+            delete_transient( AIO_Updater::TRANSIENT );
+        }
     }
 
     public function register_menu(): void {

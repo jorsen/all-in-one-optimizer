@@ -25,8 +25,8 @@ class AIO_Lazy_Load {
             return;
         }
 
-        $images_active = $this->opts['lazy_images'] ?? 0;
-        $bg_active     = $this->opts['lazy_bg']     ?? 0;
+        $images_active  = $this->opts['lazy_images']  ?? 0;
+        $bg_active      = $this->opts['lazy_bg']      ?? 0;
         $iframes_active = $this->opts['lazy_iframes'] ?? 0;
 
         if ( ! $images_active && ! $bg_active && ! $iframes_active ) {
@@ -38,8 +38,29 @@ class AIO_Lazy_Load {
             return;
         }
 
+        add_action( 'wp_head',           [ $this, 'inject_css' ], 1 );
         add_action( 'template_redirect', [ $this, 'start_buffer' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_script' ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // Inject minimal frontend CSS — no file, no HTTP request, no conflicts.
+    //
+    // Only targets our own .aio-lazy* classes.
+    // Fade-in runs AFTER the image loads, so images are never invisible.
+    // prefers-reduced-motion: no animation, just instant swap.
+    // -------------------------------------------------------------------------
+
+    public function inject_css(): void {
+        ?>
+<style id="aio-lazy-css">
+@media(prefers-reduced-motion:no-preference){
+    .aio-lazy-loaded{animation:aio-lazy-in .4s ease both}
+    .aio-lazy-bg-loaded{animation:aio-lazy-in .4s ease both}
+    @keyframes aio-lazy-in{from{opacity:0}to{opacity:1}}
+}
+</style>
+        <?php
     }
 
     // -------------------------------------------------------------------------

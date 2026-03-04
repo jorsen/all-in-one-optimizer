@@ -70,6 +70,34 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
         </div>
     </div>
 
+    <?php
+    // After saving settings: show a combined "saved + update" notice if a
+    // newer version is available. WordPress already shows the green "Settings
+    // saved." banner; this adds an update prompt directly below it.
+    if ( ! empty( $_GET['settings-updated'] ) && $has_update ) :
+        $update_url = wp_nonce_url(
+            admin_url( 'update.php?action=upgrade-plugin&plugin=' . rawurlencode( 'all-in-one-optimizer/all-in-one-optimizer.php' ) ),
+            'upgrade-plugin_all-in-one-optimizer/all-in-one-optimizer.php'
+        );
+        ?>
+        <div class="notice notice-warning is-dismissible" style="margin-top:12px">
+            <p>
+                <strong><?php esc_html_e( 'Plugin update available:', 'aio-optimizer' ); ?></strong>
+                <?php
+                printf(
+                    /* translators: 1: current version, 2: new version */
+                    esc_html__( 'You are on v%1$s — v%2$s is available.', 'aio-optimizer' ),
+                    esc_html( AIO_VERSION ),
+                    esc_html( $release['version'] )
+                );
+                ?>
+                &nbsp;<a href="<?php echo esc_url( $update_url ); ?>" class="button button-primary button-small">
+                    <?php esc_html_e( 'Update Now', 'aio-optimizer' ); ?>
+                </a>
+            </p>
+        </div>
+    <?php endif; ?>
+
     <?php // ================================================================
           // PRESET BAR
           // ================================================================ ?>
