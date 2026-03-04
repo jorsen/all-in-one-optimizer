@@ -37,17 +37,22 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
             </span>
 
             <?php if ( $has_update ) : ?>
+                <?php
+                $update_url = wp_nonce_url(
+                    admin_url( 'update.php?action=upgrade-plugin&plugin=' . rawurlencode( 'all-in-one-optimizer/all-in-one-optimizer.php' ) ),
+                    'upgrade-plugin_all-in-one-optimizer/all-in-one-optimizer.php'
+                );
+                ?>
                 <span class="aio-update-badge">
                     <?php
                     printf(
-                        /* translators: %s = new version number */
                         esc_html__( 'Update available: %s', 'aio-optimizer' ),
                         esc_html( $release['version'] )
                     );
                     ?>
                     &mdash;
-                    <a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">
-                        <?php esc_html_e( 'Go to Plugins page', 'aio-optimizer' ); ?>
+                    <a href="<?php echo esc_url( $update_url ); ?>" class="button button-primary button-small">
+                        <?php esc_html_e( 'Update Now', 'aio-optimizer' ); ?>
                     </a>
                 </span>
             <?php elseif ( $just_checked ) : ?>
