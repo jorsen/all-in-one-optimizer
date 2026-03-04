@@ -4,7 +4,10 @@ defined( 'ABSPATH' ) || exit;
 class AIO_Admin {
 
     public function init(): void {
-        add_action( 'admin_init',         [ $this, 'register_settings' ] );
+        // register_settings() must run on admin_init. Since init() is already
+        // called from an admin_init callback, call it directly here rather than
+        // adding another admin_init hook (nested hooks at the same priority don't fire).
+        $this->register_settings();
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
     }
 
