@@ -10,6 +10,7 @@ $tabs   = [
     'flyingpages'  => __( 'Flying Pages', 'aio-optimizer' ),
     'flyingimages' => __( 'Flying Images', 'aio-optimizer' ),
     'spa'          => __( 'SPA', 'aio-optimizer' ),
+    'diagnostics'  => __( 'Diagnostics', 'aio-optimizer' ),
 ];
 
 // Build tab URLs explicitly so they survive form-save redirects.
@@ -105,6 +106,7 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
         <?php endforeach; ?>
     </nav>
 
+    <?php if ( 'diagnostics' !== $active ) : ?>
     <form method="post" action="options.php">
         <?php settings_fields( 'aio_optimizer_group' ); ?>
 
@@ -362,4 +364,186 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
 
         <?php submit_button( __( 'Save Changes', 'aio-optimizer' ) ); ?>
     </form>
+    <?php else : ?>
+
+        <?php
+        // ================================================================
+        // TAB: DIAGNOSTICS  (outside the settings form — read-only)
+        // ================================================================
+
+        // Module status based on saved options.
+        $diag_modules = [
+            'Debloat'        => array_sum( array_intersect_key( $opts, array_flip( [
+                'debloat_emoji','debloat_jquery_migrate','debloat_xmlrpc','debloat_generator',
+                'debloat_wlwmanifest','debloat_rsd','debloat_rest_links','debloat_shortlink',
+                'debloat_self_ping','debloat_query_strings','debloat_heartbeat','debloat_oembed',
+            ] ) ) ) > 0,
+            'Autoptimize'    => (bool) ( $opts['auto_defer_js'] || $opts['auto_async_js'] ),
+            'Lazy Load'      => (bool) ( $opts['lazy_images'] || $opts['lazy_iframes'] ),
+            'Flying Pages'   => (bool) $opts['fly_enable'],
+            'Flying Images'  => (bool) ( ( $opts['fly_images'] ?? 1 ) && $opts['spa_enable'] ),
+            'SPA Navigation' => (bool) $opts['spa_enable'],
+        ];
+
+        // Detect common conflicting plugins.
+        $conflicts      = [];
+        $conflict_map   = [
+            'Smush'           => 'wp-smushit/wp-smush.php',
+            'EWWW Image Opt.' => 'ewww-image-optimizer/ewww-image-optimizer.php',
+            'Rocket Lazy Load'=> 'rocket-lazy-load/rocket-lazy-load.php',
+            'WP Rocket'       => 'wp-rocket/wp-rocket.php',
+            'Autoptimize'     => 'autoptimize/autoptimize.php',
+            'W3 Total Cache'  => 'w3-total-cache/w3-total-cache.php',
+            'WP Super Cache'  => 'wp-super-cache/wp-cache.php',
+            'LiteSpeed Cache' => 'litespeed-cache/litespeed-cache.php',
+        ];
+        if ( function_exists( 'is_plugin_active' ) ) {
+            foreach ( $conflict_map as $name => $file ) {
+                if ( is_plugin_active( $file ) ) {
+                    $conflicts[] = $name;
+                }
+            }
+        }
+
+        $front_end_url = add_query_arg( 'aio_diag', '1', home_url( '/' ) );
+        ?>
+
+        <!-- Server Status -->
+        <div class="aio-card">
+            <h2><?php esc_html_e( 'Server Status', 'aio-optimizer' ); ?></h2>
+            <table class="aio-diag-table widefat striped">
+                <tbody>
+                    <tr>
+                        <th><?php esc_html_e( 'Plugin Version', 'aio-optimizer' ); ?></th>
+                        <td><code><?php echo esc_html( AIO_VERSION ); ?></code></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'PHP Version', 'aio-optimizer' ); ?></th>
+                        <td><code><?php echo esc_html( PHP_VERSION ); ?></code></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'WordPress Version', 'aio-optimizer' ); ?></th>
+                        <td><code><?php echo esc_html( get_bloginfo( 'version' ) ); ?></code></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Options saved', 'aio-optimizer' ); ?></th>
+                        <td><?php echo get_option( AIO_OPTION ) ? '<span class="aio-status-ok">&#10003; Yes</span>' : '<span class="aio-status-off">&#9675; Using defaults</span>'; ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Output buffering', 'aio-optimizer' ); ?></th>
+                        <td>
+                            <?php
+                            $ob = ob_get_level() > 0;
+                            echo $ob
+                                ? '<span class="aio-status-ok">&#10003; Active (level: ' . esc_html( ob_get_level() ) . ')</span>'
+                                : '<span class="aio-status-fail">&#10007; Not active — Lazy Load may not work</span>';
+                            ?>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Module Status -->
+        <div class="aio-card">
+            <h2><?php esc_html_e( 'Module Status', 'aio-optimizer' ); ?></h2>
+            <table class="aio-diag-table widefat striped">
+                <tbody>
+                    <?php foreach ( $diag_modules as $name => $enabled ) : ?>
+                    <tr>
+                        <th><?php echo esc_html( $name ); ?></th>
+                        <td>
+                            <?php if ( $enabled ) : ?>
+                                <span class="aio-status-ok">&#9679; <?php esc_html_e( 'Enabled', 'aio-optimizer' ); ?></span>
+                            <?php else : ?>
+                                <span class="aio-status-off">&#9675; <?php esc_html_e( 'Disabled', 'aio-optimizer' ); ?></span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php if ( ! empty( $conflicts ) ) : ?>
+            <div class="aio-notice aio-notice--warn">
+                <strong><?php esc_html_e( 'Potential Conflicts Detected:', 'aio-optimizer' ); ?></strong>
+                <?php echo esc_html( implode( ', ', $conflicts ) ); ?> —
+                <?php esc_html_e( 'these plugins may overlap with AIO Optimizer features.', 'aio-optimizer' ); ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- SPA Configuration -->
+        <div class="aio-card">
+            <h2><?php esc_html_e( 'SPA Configuration', 'aio-optimizer' ); ?></h2>
+            <table class="aio-diag-table widefat striped">
+                <tbody>
+                    <tr>
+                        <th><?php esc_html_e( 'SPA Enabled', 'aio-optimizer' ); ?></th>
+                        <td><?php echo $opts['spa_enable'] ? '<span class="aio-status-ok">&#10003; Yes</span>' : '<span class="aio-status-off">&#9675; No</span>'; ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Content Selector', 'aio-optimizer' ); ?></th>
+                        <td><code><?php echo esc_html( $opts['spa_selector'] ); ?></code></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Excluded Paths', 'aio-optimizer' ); ?></th>
+                        <td><code><?php echo esc_html( $opts['spa_exclude'] ?: '—' ); ?></code></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Flying Pages (Prefetch)', 'aio-optimizer' ); ?></th>
+                        <td><?php echo $opts['fly_enable'] ? '<span class="aio-status-ok">&#10003; Enabled (delay: ' . esc_html( $opts['fly_delay'] ) . 'ms)</span>' : '<span class="aio-status-off">&#9675; Disabled</span>'; ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Front-end Diagnostics -->
+        <div class="aio-card">
+            <h2><?php esc_html_e( 'Front-end Diagnostics', 'aio-optimizer' ); ?></h2>
+            <p class="description">
+                <?php esc_html_e( 'Open the front-end with a live diagnostic overlay to validate JavaScript modules are running correctly. Only visible to logged-in administrators.', 'aio-optimizer' ); ?>
+            </p>
+            <a href="<?php echo esc_url( $front_end_url ); ?>" target="_blank" class="button button-primary">
+                <?php esc_html_e( 'Open Front-end Diagnostics', 'aio-optimizer' ); ?>
+            </a>
+
+            <h3 style="margin-top:20px"><?php esc_html_e( 'Browser Console Checks', 'aio-optimizer' ); ?></h3>
+            <p class="description"><?php esc_html_e( 'Open DevTools (F12) on any front-end page and run these commands:', 'aio-optimizer' ); ?></p>
+            <table class="aio-diag-table widefat" style="margin-top:8px">
+                <tbody>
+                    <tr>
+                        <th><?php esc_html_e( 'SPA config', 'aio-optimizer' ); ?></th>
+                        <td><code>window.aioSpaConfig</code></td>
+                        <td class="aio-diag-hint"><?php esc_html_e( 'Should show selector, exclude, home, adminPath', 'aio-optimizer' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'SPA disabled?', 'aio-optimizer' ); ?></th>
+                        <td><code>window.__aioSpaDisabled</code></td>
+                        <td class="aio-diag-hint"><?php esc_html_e( 'Should return undefined (not true)', 'aio-optimizer' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Flying Pages config', 'aio-optimizer' ); ?></th>
+                        <td><code>window.aioFlyConfig</code></td>
+                        <td class="aio-diag-hint"><?php esc_html_e( 'Should show delay and mobile settings', 'aio-optimizer' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Prefetch cache size', 'aio-optimizer' ); ?></th>
+                        <td><code>window.aioPageCache?.size</code></td>
+                        <td class="aio-diag-hint"><?php esc_html_e( 'Increases as you hover over links', 'aio-optimizer' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Content selector', 'aio-optimizer' ); ?></th>
+                        <td><code>document.querySelector('<?php echo esc_js( $opts['spa_selector'] ); ?>')</code></td>
+                        <td class="aio-diag-hint"><?php esc_html_e( 'Must return an element — if null, SPA cannot swap content', 'aio-optimizer' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Captured AIO logs', 'aio-optimizer' ); ?></th>
+                        <td><code>window.__aioLogs</code></td>
+                        <td class="aio-diag-hint"><?php esc_html_e( 'Available when front-end diagnostics panel is open', 'aio-optimizer' ); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    <?php endif; ?>
 </div>

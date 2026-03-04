@@ -63,6 +63,18 @@ class AIO_SPA {
             ] );
         }
 
+        // Diagnostic overlay — admin-only, only when ?aio_diag=1 is in the URL.
+        // Loads before spa.js so the console patch captures its init messages.
+        if ( ! empty( $_GET['aio_diag'] ) && current_user_can( 'manage_options' ) ) {
+            wp_enqueue_script(
+                'aio-diag',
+                AIO_URL . 'assets/js/diag.js',
+                [],
+                AIO_VERSION,
+                false // in <head> so it patches console before footer scripts run
+            );
+        }
+
         // Flying Images — shared element transitions; requires SPA to fire events.
         if ( ! empty( $this->opts['fly_images'] ) && $this->opts['spa_enable'] ) {
             $deps = $this->opts['spa_enable'] ? [ 'aio-spa' ] : [];
