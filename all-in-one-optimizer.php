@@ -74,11 +74,13 @@ function aio_bootstrap(): void {
     require_once AIO_DIR . 'includes/class-aio-autoptimize.php';
     require_once AIO_DIR . 'includes/class-aio-lazy-load.php';
     require_once AIO_DIR . 'includes/class-aio-spa.php';
+    require_once AIO_DIR . 'includes/class-aio-updater.php';
 
     ( new AIO_Debloat( $opts ) )->init();
     ( new AIO_Autoptimize( $opts ) )->init();
     ( new AIO_Lazy_Load( $opts ) )->init();
     ( new AIO_SPA( $opts ) )->init();
+    ( new AIO_Updater() )->init();
 }
 add_action( 'plugins_loaded', 'aio_bootstrap' );
 

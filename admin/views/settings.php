@@ -14,9 +14,55 @@ $tabs   = [
 
 // Build tab URLs explicitly so they survive form-save redirects.
 $base_url = admin_url( 'options-general.php?page=aio-optimizer' );
+
+// Check if a manual update check was just triggered.
+$just_checked = ! empty( $_GET['aio_checked'] );
+
+// Get cached release info for version status (no new API call here).
+$release = class_exists( 'AIO_Updater' ) ? ( new AIO_Updater() )->get_release() : null;
+$has_update = $release && version_compare( $release['version'], AIO_VERSION, '>' );
 ?>
 <div class="wrap aio-wrap">
-    <h1><?php esc_html_e( 'All-in-One Optimizer', 'aio-optimizer' ); ?></h1>
+    <div class="aio-header">
+        <h1><?php esc_html_e( 'All-in-One Optimizer', 'aio-optimizer' ); ?></h1>
+        <div class="aio-version-bar">
+            <span class="aio-version-current">
+                <?php
+                printf(
+                    /* translators: %s = version number */
+                    esc_html__( 'Version %s', 'aio-optimizer' ),
+                    esc_html( AIO_VERSION )
+                );
+                ?>
+            </span>
+
+            <?php if ( $has_update ) : ?>
+                <span class="aio-update-badge">
+                    <?php
+                    printf(
+                        /* translators: %s = new version number */
+                        esc_html__( 'Update available: %s', 'aio-optimizer' ),
+                        esc_html( $release['version'] )
+                    );
+                    ?>
+                    &mdash;
+                    <a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">
+                        <?php esc_html_e( 'Go to Plugins page', 'aio-optimizer' ); ?>
+                    </a>
+                </span>
+            <?php elseif ( $just_checked ) : ?>
+                <span class="aio-up-to-date"><?php esc_html_e( 'You are up to date.', 'aio-optimizer' ); ?></span>
+            <?php endif; ?>
+
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+                <?php wp_nonce_field( 'aio_check_update' ); ?>
+                <input type="hidden" name="action" value="aio_check_update">
+                <button type="submit" class="button button-small aio-check-update-btn">
+                    <?php esc_html_e( 'Check for Updates', 'aio-optimizer' ); ?>
+                </button>
+            </form>
+        </div>
+    </div>
 
     <?php // ================================================================
           // PRESET BAR
