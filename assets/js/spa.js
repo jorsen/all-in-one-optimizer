@@ -216,8 +216,19 @@
 
             if ( ! newContent ) { location.href = url; return; }
 
+            console.log(
+                '[AIO SPA] Fetched doc matched:', newContent.sel,
+                '| innerHTML length:', newContent.el.innerHTML.length,
+                '| el:', newContent.el.tagName + ( newContent.el.id ? '#' + newContent.el.id : '' ) + ( newContent.el.className ? '.' + String( newContent.el.className ).split( ' ' )[0] : '' )
+            );
+
             const current = queryContent( document, newContent.sel );
             if ( ! current ) { location.href = url; return; }
+
+            console.log(
+                '[AIO SPA] Current doc matched:', current.sel,
+                '| el:', current.el.tagName + ( current.el.id ? '#' + current.el.id : '' ) + ( current.el.className ? '.' + String( current.el.className ).split( ' ' )[0] : '' )
+            );
 
             // Fire before-navigate so flying-images.js can capture positions.
             document.dispatchEvent( new CustomEvent( 'aio:before-navigate', {
@@ -230,6 +241,7 @@
 
             // Swap.
             current.el.innerHTML = newContent.el.innerHTML;
+            console.log( '[AIO SPA] Swap done. New innerHTML length:', current.el.innerHTML.length );
 
             // Update head.
             document.title = newDoc.title;
