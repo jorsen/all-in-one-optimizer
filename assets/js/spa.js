@@ -216,10 +216,12 @@
 
             if ( ! newContent ) { location.href = url; return; }
 
+            const _p = newContent.el.parentElement;
             console.log(
                 '[AIO SPA] Fetched doc matched:', newContent.sel,
                 '| innerHTML length:', newContent.el.innerHTML.length,
-                '| el:', newContent.el.tagName + ( newContent.el.id ? '#' + newContent.el.id : '' ) + ( newContent.el.className ? '.' + String( newContent.el.className ).split( ' ' )[0] : '' )
+                '| el:', newContent.el.tagName + ( newContent.el.id ? '#' + newContent.el.id : '' ) + ( newContent.el.className ? '.' + String( newContent.el.className ).split( ' ' )[0] : '' ),
+                '| parent:', _p ? ( _p.tagName + ( _p.id ? '#' + _p.id : '' ) + ( _p.className ? '.' + String( _p.className ).split( ' ' )[0] : '' ) ) : 'none'
             );
 
             const current = queryContent( document, newContent.sel );
