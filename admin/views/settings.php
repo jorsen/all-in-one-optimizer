@@ -338,11 +338,17 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
                 <tr>
                     <th scope="row"><label for="spa_selector"><?php esc_html_e( 'Content selector', 'aio-optimizer' ); ?></label></th>
                     <td>
-                        <input type="text" id="spa_selector"
-                               name="<?php echo esc_attr( AIO_OPTION . '[spa_selector]' ); ?>"
-                               value="<?php echo esc_attr( $opts['spa_selector'] ); ?>"
-                               class="regular-text">
-                        <p class="description"><?php esc_html_e( 'Comma-separated CSS selectors (first match wins). E.g. #content, main, .site-main', 'aio-optimizer' ); ?></p>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                            <input type="text" id="spa_selector"
+                                   name="<?php echo esc_attr( AIO_OPTION . '[spa_selector]' ); ?>"
+                                   value="<?php echo esc_attr( $opts['spa_selector'] ); ?>"
+                                   class="regular-text">
+                            <button type="button" id="aio-detect-selector" class="button">
+                                <?php esc_html_e( 'Auto-detect', 'aio-optimizer' ); ?>
+                            </button>
+                        </div>
+                        <p id="aio-detect-result" class="description" style="margin-top:4px"></p>
+                        <p class="description"><?php esc_html_e( 'Auto-detect scans your homepage to find the correct content wrapper. Or enter manually: #content, main, .site-main', 'aio-optimizer' ); ?></p>
                     </td>
                 </tr>
                 <tr>

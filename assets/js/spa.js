@@ -210,17 +210,33 @@
             // Skip external scripts already loaded by the page (avoid double-loading).
             if ( inert.src ) return;
 
+            // Skip Gravity Forms init scripts — they reference global `gform` state
+            // that is already initialised and cannot be re-run after a SPA swap.
+            // We call gform.doAction() below instead to properly re-init the form.
+            const snippet = ( inert.id + ' ' + inert.textContent.slice( 0, 300 ) );
+            if ( /gform|gfield/i.test( snippet ) ) return;
+
             const live = document.createElement( 'script' );
             Array.from( inert.attributes ).forEach( function ( a ) { live.setAttribute( a.name, a.value ); } );
             live.textContent = inert.textContent;
 
-            // Wrap execution so a broken third-party inline script (e.g. gform, GTM)
+            // Wrap execution so a broken third-party inline script
             // doesn't crash the SPA cycle or trigger the error safety-net above.
             const original = live.textContent;
             live.textContent = 'try{' + original + '}catch(e){console.warn("[AIO] Skipped inline script:",e.message);}';
 
             inert.parentNode.replaceChild( live, inert );
         } );
+
+        // Re-initialize Gravity Forms using its own post-render hook.
+        if ( typeof gform !== 'undefined' && typeof gform.doAction === 'function' ) {
+            container.querySelectorAll( '.gform_wrapper[id]' ).forEach( function ( wrapper ) {
+                const m = wrapper.id.match( /gform_wrapper_(\d+)/ );
+                if ( m ) {
+                    try { gform.doAction( 'gform_post_render', parseInt( m[1], 10 ), 1 ); } catch ( e ) {}
+                }
+            } );
+        }
     }
 
     // -------------------------------------------------------------------------

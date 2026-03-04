@@ -144,6 +144,70 @@
     }
 
     // -------------------------------------------------------------------------
+    // Auto-detect content selector
+    // -------------------------------------------------------------------------
+    function detectSelector() {
+        const btn    = document.getElementById( 'aio-detect-selector' );
+        const input  = document.getElementById( 'spa_selector' );
+        const result = document.getElementById( 'aio-detect-result' );
+        if ( ! btn || ! input ) return;
+
+        const homeUrl = ( window.aioAdmin && window.aioAdmin.homeUrl ) || '/';
+
+        btn.disabled    = true;
+        btn.textContent = 'Scanning…';
+        if ( result ) result.textContent = '';
+
+        // Ordered from most specific to most generic — first large match wins.
+        const CANDIDATES = [
+            '#content', '#main-content', '#primary', '#main',
+            '.site-main', '.main-content', '.content-area', '.entry-content',
+            'main', 'article',
+        ];
+
+        fetch( homeUrl, { credentials: 'same-origin' } )
+            .then( function ( r ) { return r.text(); } )
+            .then( function ( html ) {
+                const doc     = new DOMParser().parseFromString( html, 'text/html' );
+                var bestSel   = null;
+                var bestLen   = 0;
+
+                CANDIDATES.forEach( function ( sel ) {
+                    try {
+                        const el = doc.querySelector( sel );
+                        if ( el ) {
+                            const len = el.innerHTML.length;
+                            if ( len > bestLen ) { bestLen = len; bestSel = sel; }
+                        }
+                    } catch ( e ) {}
+                } );
+
+                if ( bestSel ) {
+                    input.value = bestSel;
+                    if ( result ) {
+                        result.style.color = '#1e7e34';
+                        result.textContent = '✓ Detected: ' + bestSel + ' (' + Math.round( bestLen / 1024 ) + ' KB of content)';
+                    }
+                } else {
+                    if ( result ) {
+                        result.style.color = '#c62d2d';
+                        result.textContent = '✗ Could not detect — please enter your theme\'s content wrapper manually.';
+                    }
+                }
+            } )
+            .catch( function () {
+                if ( result ) {
+                    result.style.color = '#c62d2d';
+                    result.textContent = '✗ Fetch failed — check browser console.';
+                }
+            } )
+            .finally( function () {
+                btn.disabled    = false;
+                btn.textContent = 'Auto-detect';
+            } );
+    }
+
+    // -------------------------------------------------------------------------
     // Wire up buttons after DOM is ready
     // -------------------------------------------------------------------------
     document.addEventListener( 'DOMContentLoaded', function () {
@@ -153,6 +217,14 @@
                 applyPreset( btn.dataset.preset );
             } );
         } );
+
+        const detectBtn = document.getElementById( 'aio-detect-selector' );
+        if ( detectBtn ) {
+            detectBtn.addEventListener( 'click', function ( e ) {
+                e.preventDefault();
+                detectSelector();
+            } );
+        }
     } );
 
 } )();
