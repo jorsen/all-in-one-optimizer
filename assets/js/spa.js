@@ -41,6 +41,8 @@
 
     const BAR_ID = 'aio-progress';
 
+    const LOADER_ID = 'aio-preloader';
+
     ( function injectBarStyles() {
         const s = document.createElement( 'style' );
         s.textContent = `
@@ -49,6 +51,22 @@
             transition:width .25s ease,opacity .4s ease;pointer-events:none}
             #${BAR_ID}.loading{width:70%;opacity:1}
             #${BAR_ID}.done{width:100%;opacity:0}
+
+            #${LOADER_ID}{
+                position:fixed;inset:0;z-index:99998;
+                display:flex;align-items:center;justify-content:center;
+                background:rgba(255,255,255,0.55);
+                backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+                opacity:0;pointer-events:none;
+                transition:opacity .2s ease}
+            #${LOADER_ID}.active{opacity:1;pointer-events:all}
+            #${LOADER_ID} .aio-spinner{
+                width:44px;height:44px;
+                border:3px solid rgba(0,115,170,.18);
+                border-top-color:var(--aio-bar-color,#0073aa);
+                border-radius:50%;
+                animation:aio-spin .75s linear infinite}
+            @keyframes aio-spin{to{transform:rotate(360deg)}}
         `;
         document.head.appendChild( s );
     } )();
@@ -77,6 +95,36 @@
             b.className = '';
             b.removeEventListener( 'transitionend', h );
         } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Preloader spinner
+    // -------------------------------------------------------------------------
+
+    let loaderTimer = null;
+
+    function loader() {
+        return document.getElementById( LOADER_ID ) || ( function () {
+            const el  = document.createElement( 'div' );
+            el.id     = LOADER_ID;
+            el.innerHTML = '<div class="aio-spinner"></div>';
+            document.body.appendChild( el );
+            return el;
+        } )();
+    }
+
+    function showLoader() {
+        // Only show if navigation takes longer than 200 ms (avoids flash on fast connections).
+        loaderTimer = setTimeout( function () {
+            loader().classList.add( 'active' );
+        }, 200 );
+    }
+
+    function hideLoader() {
+        clearTimeout( loaderTimer );
+        loaderTimer = null;
+        const l = document.getElementById( LOADER_ID );
+        if ( l ) l.classList.remove( 'active' );
     }
 
     // -------------------------------------------------------------------------
@@ -188,6 +236,7 @@
         controller = new AbortController();
 
         startBar();
+        showLoader();
 
         let html = null;
 
@@ -234,7 +283,6 @@
                     const newEl = newDoc.querySelector( elSel );
                     if ( newEl ) {
                         heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
-                        console.log( '[AIO SPA] Co-swap queued:', elSel );
                     }
                 } catch ( e ) {}
             } );
@@ -275,6 +323,7 @@
             }
 
             // Fade in new content.
+            hideLoader();
             fadeIn( current.el );
             finishBar();
 
@@ -290,6 +339,7 @@
 
         } catch ( err ) {
             if ( err.name === 'AbortError' ) return;
+            hideLoader();
             finishBar();
             location.href = url;
         }
