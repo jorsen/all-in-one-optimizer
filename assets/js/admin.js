@@ -406,9 +406,49 @@
     }
 
     // =========================================================================
+    // JS-powered tab switching (no page reload)
+    // =========================================================================
+    function switchTab( slug ) {
+        // Hide all panels.
+        document.querySelectorAll( '.aio-tab-panel' ).forEach( function ( p ) {
+            p.style.display = 'none';
+        } );
+
+        // Show target panel.
+        var panel = document.getElementById( 'aio-panel-' + slug );
+        if ( panel ) panel.style.display = '';
+
+        // Update active tab highlight.
+        document.querySelectorAll( '.aio-tab[data-tab]' ).forEach( function ( t ) {
+            t.classList.toggle( 'aio-tab--active', t.dataset.tab === slug );
+        } );
+
+        // Hide Save Changes button on the read-only diagnostics tab.
+        var submitRow = document.getElementById( 'aio-submit-row' );
+        if ( submitRow ) {
+            submitRow.style.display = slug === 'diagnostics' ? 'none' : '';
+        }
+
+        // Update URL without reload so bookmark / refresh lands on same tab.
+        try {
+            var url = new URL( window.location.href );
+            url.searchParams.set( 'tab', slug );
+            history.replaceState( null, '', url.toString() );
+        } catch ( e ) {}
+    }
+
+    // =========================================================================
     // Wire up all buttons after DOM is ready
     // =========================================================================
     document.addEventListener( 'DOMContentLoaded', function () {
+
+        // Tab switching.
+        document.querySelectorAll( '.aio-tab[data-tab]' ).forEach( function ( tab ) {
+            tab.addEventListener( 'click', function ( e ) {
+                e.preventDefault();
+                switchTab( tab.dataset.tab );
+            } );
+        } );
 
         // Preset buttons.
         document.querySelectorAll( '.aio-preset-btn' ).forEach( function ( btn ) {
