@@ -50,6 +50,15 @@ class AIO_Autoptimize {
 
         // GeneratePress / GP Premium.
         'generate-child-script', 'generate-back-to-top',
+
+        // Gravity Forms — core scripts must load synchronously for form init.
+        'gform_gravityforms', 'gform_json',
+        'gform_conditional_logic', 'gform_placeholder',
+        'gforms_jquery_json', 'gform_datepicker_init',
+        'gform_masked_input', 'gform_chosen',
+        'gform_inputmask', 'gform_textarea_counter',
+        'gform_field_filter', 'gform_payment',
+        'gform_stripe_frontend', 'gform_paypal_frontend',
     ];
 
     public function __construct( array $opts ) {

@@ -297,12 +297,6 @@
             const t = inert.getAttribute( 'type' );
             if ( t && t !== 'text/javascript' && t !== 'module' ) return;
 
-            // Skip Gravity Forms init scripts — they reference global `gform` state
-            // that is already initialised and cannot be re-run after a SPA swap.
-            // We call gform.doAction() below instead to properly re-init the form.
-            const snippet = ( inert.id + ' ' + inert.textContent.slice( 0, 300 ) );
-            if ( /gform|gfield/i.test( snippet ) ) return;
-
             const live = document.createElement( 'script' );
             Array.from( inert.attributes ).forEach( function ( a ) { live.setAttribute( a.name, a.value ); } );
             live.textContent = inert.textContent;
@@ -315,12 +309,27 @@
             inert.parentNode.replaceChild( live, inert );
         } );
 
-        // Re-initialize Gravity Forms using its own post-render hook.
-        if ( typeof gform !== 'undefined' && typeof gform.doAction === 'function' ) {
+        // Re-initialize Gravity Forms after SPA swap.
+        // The inline scripts above (gform.initializeOnLoaded calls) re-queue
+        // per-form setup (spinners, validators, AJAX frames). Additionally,
+        // we fire the post-render hooks so GF add-ons and conditional logic
+        // are also re-applied.
+        if ( typeof window.gform !== 'undefined' ) {
             container.querySelectorAll( '.gform_wrapper[id]' ).forEach( function ( wrapper ) {
                 const m = wrapper.id.match( /gform_wrapper_(\d+)/ );
-                if ( m ) {
-                    try { gform.doAction( 'gform_post_render', parseInt( m[1], 10 ), 1 ); } catch ( e ) {}
+                if ( ! m ) return;
+                const formId = parseInt( m[1], 10 );
+                // Main GF post-render action — triggers all GF built-in inits.
+                if ( typeof gform.doAction === 'function' ) {
+                    try { gform.doAction( 'gform_post_render', formId, 1 ); } catch ( e ) {}
+                }
+                // jQuery event version — GF add-ons and some themes listen to this.
+                if ( window.jQuery ) {
+                    try { jQuery( document ).trigger( 'gform_post_render', [ formId, 1 ] ); } catch ( e ) {}
+                }
+                // Re-apply conditional logic rules.
+                if ( typeof window.gf_apply_rules === 'function' ) {
+                    try { gf_apply_rules( formId, [], true ); } catch ( e ) {}
                 }
             } );
         }
