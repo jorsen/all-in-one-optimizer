@@ -14,6 +14,18 @@ class AIO_SPA {
             return;
         }
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+
+        // Chrome 98+ Private Network Access: when the site runs on a local IP
+        // (192.168.x.x, 10.x.x, etc.) Chrome sends an OPTIONS preflight with
+        // "Access-Control-Request-Private-Network: true" before our fetch()
+        // calls. Without this response header the browser shows a permission
+        // dialog ("Allow access to devices on your local network").
+        add_filter( 'wp_headers', [ $this, 'add_private_network_header' ] );
+    }
+
+    public function add_private_network_header( array $headers ): array {
+        $headers['Access-Control-Allow-Private-Network'] = 'true';
+        return $headers;
     }
 
     public function enqueue_assets(): void {
