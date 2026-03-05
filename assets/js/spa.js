@@ -424,14 +424,28 @@
                 } catch ( e ) {}
             } );
 
-            // Pass 2: direct <body> children with IDs — diff check required.
-            document.querySelectorAll( 'body > [id]' ).forEach( function ( curEl ) {
+            // Pass 2: body descendants up to 2 levels deep with IDs.
+            // Scanning 2 levels handles the common WordPress pattern where the
+            // banner is a child of a #page / .page-wrapper container rather than
+            // a direct body child.
+            // Diff check: skip elements whose content hasn't changed (same banner
+            // on every inner page never triggers a swap; homepage banner does).
+            // Ancestor check: if a parent element is already scheduled for swap,
+            // skip the child — the parent's outerHTML replacement covers it.
+            document.querySelectorAll( 'body > [id], body > :not(script):not(style) > [id]' ).forEach( function ( curEl ) {
                 if ( seenHero.has( curEl ) ) return;
                 if ( SKIP_IDS.has( curEl.id ) ) return;
-                if ( current.el.contains( curEl ) ) return;
+                if ( current.el === curEl || current.el.contains( curEl ) || curEl.contains( current.el ) ) return;
+
+                // Skip if any ancestor is already in the swap list.
+                var anc = curEl.parentElement;
+                while ( anc && anc !== document.body ) {
+                    if ( seenHero.has( anc ) ) return;
+                    anc = anc.parentElement;
+                }
+
                 seenHero.add( curEl );
                 const newEl = newDoc.getElementById( curEl.id );
-                // Diff check: skip if content is identical (same element on all pages).
                 if ( newEl && newEl.innerHTML !== curEl.innerHTML ) {
                     heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
                 }
