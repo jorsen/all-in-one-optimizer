@@ -374,45 +374,67 @@
             //    when the content appears (prevents flash of wrong styles).
             await syncHeadStyles( newDoc );
 
-            // ── Co-swap: update sections that live OUTSIDE the main content
-            //    container. Collect references BEFORE any DOM mutation.
+            // ── Co-swap: update page-specific sections that live OUTSIDE the
+            //    main content container (e.g. a page-title banner sibling to
+            //    the content area). Collect references BEFORE any DOM mutation.
             //
-            //    Pass 1 — common header/banner class selectors.
-            //    Pass 2 — every direct <body> child with an ID that isn't the
-            //             admin bar or our own progress bar elements. This catches
-            //             theme sections like #masthead, #site-header, #banner, etc.
-            const HERO_SELS = [
-                'header', '#masthead', '#site-header', '#page-header', '#banner',
-                '.site-header', '.page-header', '.hero-section', '.page-hero',
+            //    IMPORTANT: Never swap the site navigation header or footer.
+            //    Those elements are identical across all pages and have JS state
+            //    attached (sticky scroll, mobile menu, dropdowns). Replacing their
+            //    outerHTML destroys all event listeners, breaking navigation.
+            //    Only swap sections whose content actually CHANGED between pages.
+            //
+            //    Pass 1 — page-specific banner / hero class selectors only.
+            //    Pass 2 — direct <body> children with IDs whose innerHTML
+            //             actually differs between the two documents.
+            const SKIP_IDS = new Set( [
+                'wpadminbar', BAR_ID, LOADER_ID,
+                // Common WP theme navigation header IDs — never replace.
+                'masthead', 'site-header', 'site-navigation', 'main-navigation',
+                'header', 'navbar', 'top-bar', 'site-footer', 'colophon', 'footer',
+            ] );
+
+            // Page-specific banner selectors — NOT the global nav header.
+            const BANNER_SELS = [
+                '#page-header', '#banner', '#hero',
+                '.page-header', '.hero-section', '.page-hero',
                 '.post-hero', '.site-hero', '.entry-banner', '.page-title-area',
-                '.elementor-location-header', '.elementor-location-footer',
+                '.elementor-location-footer',
             ].join( ', ' );
 
             const heroSwaps = [];
             const seenHero  = new Set();
 
-            // Pass 1: class/tag selectors.
-            document.querySelectorAll( HERO_SELS ).forEach( function ( curEl ) {
+            // Pass 1: page-specific banner selectors.
+            document.querySelectorAll( BANNER_SELS ).forEach( function ( curEl ) {
                 if ( seenHero.has( curEl ) ) return;
                 if ( current.el.contains( curEl ) ) return;
+                if ( curEl.id && SKIP_IDS.has( curEl.id ) ) return;
                 seenHero.add( curEl );
                 const elSel = curEl.id
                     ? '#' + CSS.escape( curEl.id )
                     : curEl.tagName.toLowerCase() + ( curEl.classList.length ? '.' + curEl.classList[0] : '' );
                 try {
                     const newEl = newDoc.querySelector( elSel );
-                    if ( newEl ) heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
+                    // Only swap if content actually changed — avoids destroying
+                    // JS state on elements that are the same on every page.
+                    if ( newEl && newEl.innerHTML !== curEl.innerHTML ) {
+                        heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
+                    }
                 } catch ( e ) {}
             } );
 
-            // Pass 2: direct <body> children with IDs.
+            // Pass 2: direct <body> children with IDs — diff check required.
             document.querySelectorAll( 'body > [id]' ).forEach( function ( curEl ) {
                 if ( seenHero.has( curEl ) ) return;
-                if ( curEl.id === 'wpadminbar' || curEl.id === BAR_ID || curEl.id === LOADER_ID ) return;
+                if ( SKIP_IDS.has( curEl.id ) ) return;
                 if ( current.el.contains( curEl ) ) return;
                 seenHero.add( curEl );
                 const newEl = newDoc.getElementById( curEl.id );
-                if ( newEl ) heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
+                // Diff check: skip if content is identical (same element on all pages).
+                if ( newEl && newEl.innerHTML !== curEl.innerHTML ) {
+                    heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
+                }
             } );
 
             // Fire before-navigate so flying-images.js can capture positions.
