@@ -110,16 +110,93 @@
     }
 
     // -------------------------------------------------------------------------
+    // Viewport force-check
+    //
+    // Gallery and slider plugins (Swiper, Slick, Isotope, etc.) often:
+    //  a) initialise AFTER lazy-load.js, revealing images the observer already
+    //     evaluated as off-screen / hidden.
+    //  b) clone slides — cloned <img data-src> elements are never registered
+    //     with the IntersectionObserver.
+    //
+    // checkViewport() loads any .aio-lazy element whose bounding rect is
+    // currently inside the extended viewport (same 200 px rootMargin).
+    // -------------------------------------------------------------------------
+
+    function checkViewport() {
+        const threshold = 200;
+        const vph = window.innerHeight || document.documentElement.clientHeight;
+
+        document.querySelectorAll( 'img.aio-lazy[data-src], iframe.aio-lazy[data-src], [data-bg].aio-lazy-bg' )
+            .forEach( function ( el ) {
+                const r = el.getBoundingClientRect();
+                if ( r.bottom >= -threshold && r.top <= vph + threshold ) {
+                    loadElement( el );
+                    if ( observer ) observer.unobserve( el );
+                }
+            } );
+    }
+
+    // -------------------------------------------------------------------------
+    // MutationObserver — watch for slider-cloned nodes added to the DOM
+    // -------------------------------------------------------------------------
+
+    let mutObs = null;
+
+    function startMutationObserver() {
+        if ( mutObs || ! ( 'MutationObserver' in window ) ) return;
+
+        mutObs = new MutationObserver( function ( mutations ) {
+            mutations.forEach( function ( m ) {
+                m.addedNodes.forEach( function ( node ) {
+                    if ( node.nodeType !== 1 ) return; // elements only
+
+                    // The added node itself might be a lazy image.
+                    const candidates = [];
+                    if ( node.matches && node.matches( 'img.aio-lazy[data-src], iframe.aio-lazy[data-src]' ) ) {
+                        candidates.push( node );
+                    }
+                    // Also check descendants.
+                    node.querySelectorAll( 'img.aio-lazy[data-src], iframe.aio-lazy[data-src], [data-bg].aio-lazy-bg' )
+                        .forEach( function ( el ) { candidates.push( el ); } );
+
+                    candidates.forEach( function ( el ) {
+                        if ( observer ) {
+                            observer.observe( el );
+                        } else {
+                            loadElement( el );
+                        }
+                    } );
+                } );
+            } );
+        } );
+
+        mutObs.observe( document.body, { childList: true, subtree: true } );
+    }
+
+    // -------------------------------------------------------------------------
     // Bootstrap
     // -------------------------------------------------------------------------
 
-    if ( document.readyState === 'loading' ) {
-        document.addEventListener( 'DOMContentLoaded', init );
-    } else {
+    function bootstrap() {
         init();
+        startMutationObserver();
+
+        // Run a viewport check after gallery/slider plugins have had time to
+        // initialise and reveal their elements.
+        setTimeout( checkViewport, 300 );
+        setTimeout( checkViewport, 800 );
+    }
+
+    if ( document.readyState === 'loading' ) {
+        document.addEventListener( 'DOMContentLoaded', bootstrap );
+    } else {
+        bootstrap();
     }
 
     // Re-initialise after each SPA page swap.
-    document.addEventListener( 'aio:navigate', init );
+    document.addEventListener( 'aio:navigate', function () {
+        init();
+        setTimeout( checkViewport, 300 );
+    } );
 
 } )();
