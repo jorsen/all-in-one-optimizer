@@ -262,6 +262,7 @@
     ];
 
     var tourCurrentStep = 0;
+    var tourOpenedAt   = 0; // timestamp — used to block backdrop click bleed-through
 
     function buildTourModal() {
         var overlay = document.createElement( 'div' );
@@ -353,9 +354,13 @@
             var dot = e.target.closest( '.aio-tour-dot' );
             if ( dot ) showTourStep( parseInt( dot.dataset.step, 10 ) );
         } );
-        // Close on backdrop click.
+        // Close on backdrop click — but ignore clicks within 400 ms of opening
+        // to prevent bleed-through from the click that triggered the modal
+        // (e.g. clicking "Activate" on the plugins page).
         overlay.addEventListener( 'click', function ( e ) {
-            if ( e.target === overlay ) closeTour();
+            if ( e.target === overlay && Date.now() - tourOpenedAt > 400 ) {
+                closeTour();
+            }
         } );
         // Close on Escape key.
         document.addEventListener( 'keydown', function ( e ) {
@@ -387,7 +392,9 @@
         var counter = document.getElementById( 'aio-tour-counter' );
         if ( counter ) counter.textContent = ( n + 1 ) + ' / ' + TOUR_STEPS.length;
 
-        document.getElementById( 'aio-tour-overlay' ).classList.add( 'aio-tour-visible' );
+        var ov = document.getElementById( 'aio-tour-overlay' );
+        ov.classList.add( 'aio-tour-visible' );
+        tourOpenedAt = Date.now();
     }
 
     function openTour() {
