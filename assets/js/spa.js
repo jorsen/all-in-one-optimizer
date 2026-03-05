@@ -232,6 +232,60 @@
         canon.href = newCanon.href;
     }
 
+    /**
+     * Sync stylesheets from the incoming page's <head> into the current document.
+     *
+     * 1. Add any <link rel="stylesheet"> not already loaded (by href).
+     * 2. Update / add <style id="..."> blocks (WordPress / page-builder pattern).
+     *    Elementor, Beaver Builder, and WP itself output per-page inline styles
+     *    with unique IDs (e.g. elementor-post-123-css) — these must be refreshed
+     *    on every navigation or each page will inherit the previous page's layout.
+     *
+     * Returns a Promise that resolves once all new external sheets have loaded
+     * (capped at 1.5 s to never block navigation on a slow asset server).
+     */
+    async function syncHeadStyles( newDoc ) {
+        // --- External stylesheets ---
+        const currentHrefs = new Set(
+            Array.from( document.querySelectorAll( 'link[rel="stylesheet"]' ) )
+                 .map( function ( l ) { return l.href; } )
+        );
+        const pending = [];
+        newDoc.querySelectorAll( 'link[rel="stylesheet"]' ).forEach( function ( newLink ) {
+            if ( ! newLink.href || currentHrefs.has( newLink.href ) ) return;
+            const link = document.createElement( 'link' );
+            link.rel  = 'stylesheet';
+            link.href = newLink.href;
+            if ( newLink.id ) link.id = newLink.id;
+            const p = new Promise( function ( resolve ) { link.onload = link.onerror = resolve; } );
+            pending.push( p );
+            document.head.appendChild( link );
+        } );
+
+        // --- Inline <style id="..."> blocks (head + top-level body) ---
+        newDoc.querySelectorAll( 'head style[id], body > style[id]' ).forEach( function ( newStyle ) {
+            const existing = document.getElementById( newStyle.id );
+            if ( existing ) {
+                if ( existing.textContent !== newStyle.textContent ) {
+                    existing.textContent = newStyle.textContent;
+                }
+            } else {
+                const s     = document.createElement( 'style' );
+                s.id        = newStyle.id;
+                s.textContent = newStyle.textContent;
+                document.head.appendChild( s );
+            }
+        } );
+
+        // Wait for new external sheets, but never block navigation more than 1.5 s.
+        if ( pending.length ) {
+            await Promise.race( [
+                Promise.all( pending ),
+                new Promise( function ( resolve ) { setTimeout( resolve, 1500 ); } ),
+            ] );
+        }
+    }
+
     /** Re-execute <script> tags cloned into DOM via innerHTML / DOMParser. */
     function executeScripts( container ) {
         container.querySelectorAll( 'script' ).forEach( function ( inert ) {
@@ -316,23 +370,49 @@
             const current = queryContent( document, newContent.sel );
             if ( ! current ) { location.href = url; return; }
 
-            // ── Co-swap: also update hero/banner sections that live OUTSIDE
-            // the main content container (e.g. .page-header sibling sections).
-            // Collect references BEFORE any DOM mutation.
-            const HERO_SELS = '.page-header, .hero-section, .page-hero, .post-hero, .site-hero, .entry-banner';
+            // ── Sync CSS before any DOM mutation so new styles are ready
+            //    when the content appears (prevents flash of wrong styles).
+            await syncHeadStyles( newDoc );
+
+            // ── Co-swap: update sections that live OUTSIDE the main content
+            //    container. Collect references BEFORE any DOM mutation.
+            //
+            //    Pass 1 — common header/banner class selectors.
+            //    Pass 2 — every direct <body> child with an ID that isn't the
+            //             admin bar or our own progress bar elements. This catches
+            //             theme sections like #masthead, #site-header, #banner, etc.
+            const HERO_SELS = [
+                'header', '#masthead', '#site-header', '#page-header', '#banner',
+                '.site-header', '.page-header', '.hero-section', '.page-hero',
+                '.post-hero', '.site-hero', '.entry-banner', '.page-title-area',
+                '.elementor-location-header', '.elementor-location-footer',
+            ].join( ', ' );
+
             const heroSwaps = [];
+            const seenHero  = new Set();
+
+            // Pass 1: class/tag selectors.
             document.querySelectorAll( HERO_SELS ).forEach( function ( curEl ) {
-                if ( current.el.contains( curEl ) ) return; // already inside swap zone
-                // Build a selector that uniquely identifies this element in the new doc.
+                if ( seenHero.has( curEl ) ) return;
+                if ( current.el.contains( curEl ) ) return;
+                seenHero.add( curEl );
                 const elSel = curEl.id
-                    ? '#' + curEl.id
+                    ? '#' + CSS.escape( curEl.id )
                     : curEl.tagName.toLowerCase() + ( curEl.classList.length ? '.' + curEl.classList[0] : '' );
                 try {
                     const newEl = newDoc.querySelector( elSel );
-                    if ( newEl ) {
-                        heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
-                    }
+                    if ( newEl ) heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
                 } catch ( e ) {}
+            } );
+
+            // Pass 2: direct <body> children with IDs.
+            document.querySelectorAll( 'body > [id]' ).forEach( function ( curEl ) {
+                if ( seenHero.has( curEl ) ) return;
+                if ( curEl.id === 'wpadminbar' || curEl.id === BAR_ID || curEl.id === LOADER_ID ) return;
+                if ( current.el.contains( curEl ) ) return;
+                seenHero.add( curEl );
+                const newEl = newDoc.getElementById( curEl.id );
+                if ( newEl ) heroSwaps.push( { cur: curEl, html: newEl.outerHTML } );
             } );
 
             // Fire before-navigate so flying-images.js can capture positions.
