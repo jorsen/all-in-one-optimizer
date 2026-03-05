@@ -9,12 +9,89 @@ class AIO_Admin {
         // adding another admin_init hook (nested hooks at the same priority don't fire).
         $this->register_settings();
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+        add_action( 'admin_post_aio_clear_cache', [ $this, 'handle_clear_cache' ] );
 
         // When settings are saved, clear the cached GitHub release data so the
         // next settings page load always performs a fresh update check.
         if ( ! empty( $_GET['settings-updated'] ) && class_exists( 'AIO_Updater' ) ) {
             delete_transient( AIO_Updater::TRANSIENT );
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Clear Cache handler — clears AIO transients + common caching plugins
+    // -------------------------------------------------------------------------
+
+    public function handle_clear_cache(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Permission denied.', 'aio-optimizer' ) );
+        }
+        check_admin_referer( 'aio_clear_cache' );
+
+        // AIO own transients.
+        if ( class_exists( 'AIO_Updater' ) ) {
+            delete_transient( AIO_Updater::TRANSIENT );
+        }
+        delete_site_transient( 'update_plugins' );
+
+        // WordPress object cache.
+        wp_cache_flush();
+
+        // WP Rocket.
+        if ( function_exists( 'rocket_clean_domain' ) ) {
+            rocket_clean_domain();
+        }
+
+        // W3 Total Cache.
+        if ( function_exists( 'w3tc_flush_all' ) ) {
+            w3tc_flush_all();
+        }
+
+        // WP Super Cache.
+        if ( function_exists( 'wp_cache_clear_cache' ) ) {
+            wp_cache_clear_cache();
+        }
+
+        // LiteSpeed Cache.
+        if ( has_action( 'litespeed_purge_all' ) ) {
+            do_action( 'litespeed_purge_all' );
+        }
+
+        // Autoptimize.
+        if ( class_exists( 'autoptimizeCache' ) && method_exists( 'autoptimizeCache', 'clearall' ) ) {
+            autoptimizeCache::clearall();
+        }
+
+        // WP Fastest Cache.
+        if ( ! empty( $GLOBALS['wp_fastest_cache'] ) && method_exists( $GLOBALS['wp_fastest_cache'], 'deleteCache' ) ) {
+            $GLOBALS['wp_fastest_cache']->deleteCache();
+        }
+
+        // Cache Enabler.
+        if ( has_action( 'cache_enabler_clear_complete_cache' ) ) {
+            do_action( 'cache_enabler_clear_complete_cache' );
+        }
+
+        // Breeze (Cloudways).
+        if ( has_action( 'breeze_clear_varnish' ) ) {
+            do_action( 'breeze_clear_varnish' );
+        }
+
+        // SG Optimizer.
+        if ( has_action( 'sg_cachepress_purge_cache' ) ) {
+            do_action( 'sg_cachepress_purge_cache' );
+        }
+
+        // Hummingbird.
+        if ( has_action( 'wphb_clear_page_cache' ) ) {
+            do_action( 'wphb_clear_page_cache' );
+        }
+
+        wp_safe_redirect( add_query_arg(
+            [ 'page' => 'aio-optimizer', 'aio_cache_cleared' => '1' ],
+            admin_url( 'options-general.php' )
+        ) );
+        exit;
     }
 
     public function register_menu(): void {

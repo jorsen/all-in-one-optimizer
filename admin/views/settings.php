@@ -16,8 +16,9 @@ $tabs   = [
 // Build tab URLs explicitly so they survive form-save redirects.
 $base_url = admin_url( 'options-general.php?page=aio-optimizer' );
 
-// Check if a manual update check was just triggered.
-$just_checked = ! empty( $_GET['aio_checked'] );
+// Check if a manual update check or cache clear was just triggered.
+$just_checked  = ! empty( $_GET['aio_checked'] );
+$just_cleared  = ! empty( $_GET['aio_cache_cleared'] );
 
 // Get cached release info for version status (no new API call here).
 $release    = class_exists( 'AIO_Updater' ) ? ( new AIO_Updater() )->get_release() : null;
@@ -58,7 +59,17 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
                 </span>
             <?php elseif ( $just_checked ) : ?>
                 <span class="aio-up-to-date"><?php esc_html_e( 'You are up to date.', 'aio-optimizer' ); ?></span>
+            <?php elseif ( $just_cleared ) : ?>
+                <span class="aio-up-to-date"><?php esc_html_e( 'Cache cleared.', 'aio-optimizer' ); ?></span>
             <?php endif; ?>
+
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+                <?php wp_nonce_field( 'aio_clear_cache' ); ?>
+                <input type="hidden" name="action" value="aio_clear_cache">
+                <button type="submit" class="button button-small">
+                    <?php esc_html_e( 'Clear Cache', 'aio-optimizer' ); ?>
+                </button>
+            </form>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
                 <?php wp_nonce_field( 'aio_check_update' ); ?>
