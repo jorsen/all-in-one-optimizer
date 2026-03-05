@@ -527,6 +527,42 @@
             // sticky elements) recalculate their dimensions after the swap.
             window.dispatchEvent( new Event( 'resize' ) );
 
+            // ── Re-initialize page builder widgets ──
+            // Each builder has its own re-init hook. All calls are wrapped in
+            // try/catch so a missing builder never crashes the SPA cycle.
+            idle( function () {
+                const el = document.querySelector( current.sel );
+                const $el = window.jQuery ? jQuery( el ) : null;
+
+                // Elementor — re-run element handlers on the new content area.
+                if ( window.elementorFrontend ) {
+                    try {
+                        if ( elementorFrontend.hooks ) {
+                            elementorFrontend.hooks.doAction( 'frontend/element_ready/global', $el, jQuery );
+                        }
+                        // Elementor Pro widgets (motion effects, sticky, etc.).
+                        if ( elementorFrontend.elementsHandler ) {
+                            elementorFrontend.elementsHandler.runReadyTrigger( $el );
+                        }
+                    } catch ( e ) {}
+                }
+
+                // WP Bakery (Visual Composer).
+                if ( typeof window.vc_js === 'function' ) {
+                    try { window.vc_js(); } catch ( e ) {}
+                }
+
+                // Beaver Builder.
+                if ( window.FLBuilder ) {
+                    try { FLBuilder._initModules(); } catch ( e ) {}
+                }
+
+                // Divi.
+                if ( window.ET_Builder ) {
+                    try { ET_Builder.run(); } catch ( e ) {}
+                }
+            } );
+
             // Notify other modules (lazy-load.js, flying-images.js, custom code).
             document.dispatchEvent( new CustomEvent( 'aio:navigate', {
                 detail: { url: canonical, title: newDoc.title },

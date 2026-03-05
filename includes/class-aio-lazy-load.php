@@ -68,7 +68,7 @@ class AIO_Lazy_Load {
     // -------------------------------------------------------------------------
 
     private function has_lazy_conflict(): bool {
-        // Common lazy-load plugins that would conflict.
+        // Dedicated lazy-load plugins.
         $conflicting_plugins = [
             'rocket-lazy-load/rocket-lazy-load.php',
             'lazy-load/lazy-load.php',
@@ -76,12 +76,29 @@ class AIO_Lazy_Load {
             'bj-lazy-load/bj-lazy-load.php',
             'wp-smushit/wp-smush.php',
             'ewww-image-optimizer/ewww-image-optimizer.php',
+            // Optimole has its own lazy load.
+            'optimole-wp/optimole-wp.php',
+            // ShortPixel Adaptive Images.
+            'shortpixel-adaptive-images/shortpixel-adaptive-images.php',
         ];
         foreach ( $conflicting_plugins as $plugin ) {
             if ( is_plugin_active( $plugin ) ) {
                 return true;
             }
         }
+
+        // Elementor 3.x+ has a built-in lazy load setting.
+        // Only conflict if it is actually turned on.
+        if ( is_plugin_active( 'elementor/elementor.php' ) ) {
+            $el_settings = get_option( 'elementor_settings', [] );
+            if ( is_string( $el_settings ) ) {
+                $el_settings = json_decode( $el_settings, true ) ?: [];
+            }
+            if ( ! empty( $el_settings['lazy_load'] ) ) {
+                return true;
+            }
+        }
+
         return false;
     }
 

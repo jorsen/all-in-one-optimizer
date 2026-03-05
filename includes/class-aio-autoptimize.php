@@ -7,14 +7,49 @@ class AIO_Autoptimize {
     private array $excluded = [];
 
     /**
-     * WordPress core handles that must never be deferred or moved,
-     * regardless of user settings. Other plugins depend on these being
-     * available synchronously before their own scripts execute.
+     * Script handles that must never be deferred or moved.
+     * Includes WordPress core + all major page builder critical scripts.
      */
     private const SAFE_HANDLES = [
+        // WordPress core.
         'jquery', 'jquery-core', 'jquery-migrate',
         'wp-polyfill', 'regenerator-runtime',
         'wp-hooks', 'wp-i18n', 'wp-dom-ready',
+
+        // Elementor.
+        'elementor-frontend', 'elementor-pro-frontend',
+        'elementor-waypoints', 'elementor-sticky',
+        'elementor-dialog', 'elementor-common',
+        'elementor-app', 'elementor-editor',
+
+        // WP Bakery (Visual Composer).
+        'wpb-js-composer-js-comp', 'vc_js',
+        'wpb_composer_front_js', 'vc-frontend',
+
+        // Beaver Builder.
+        'fl-builder', 'fl-builder-layout',
+        'fl-builder-min', 'fl-animations',
+
+        // Divi / Extra.
+        'et-builder-modules-script',
+        'et-builder-modules-script-pro',
+        'divi-custom-script', 'et_pb_smooth_scroll',
+
+        // Avada / Fusion Builder.
+        'fusion-builder', 'fusion-frontend',
+        'avada-comment-form', 'avada-live',
+
+        // Brizy.
+        'brizy-frontend',
+
+        // Bricks Builder.
+        'bricks-scripts',
+
+        // Oxygen Builder.
+        'oxygen-frontend', 'ct-builder',
+
+        // GeneratePress / GP Premium.
+        'generate-child-script', 'generate-back-to-top',
     ];
 
     public function __construct( array $opts ) {
