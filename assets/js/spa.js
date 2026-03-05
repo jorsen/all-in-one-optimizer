@@ -374,6 +374,15 @@
             //    when the content appears (prevents flash of wrong styles).
             await syncHeadStyles( newDoc );
 
+            // ── Sync <body> class + id so page-specific CSS selectors like
+            //    `.page-slug-home .page-header` resolve correctly after nav.
+            if ( newDoc.body.className !== document.body.className ) {
+                document.body.className = newDoc.body.className;
+            }
+            if ( newDoc.body.id && newDoc.body.id !== document.body.id ) {
+                document.body.id = newDoc.body.id;
+            }
+
             // ── Co-swap: update page-specific sections that live OUTSIDE the
             //    main content container (e.g. a page-title banner sibling to
             //    the content area). Collect references BEFORE any DOM mutation.

@@ -10,6 +10,7 @@ class AIO_Admin {
         $this->register_settings();
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
         add_action( 'admin_post_aio_clear_cache', [ $this, 'handle_clear_cache' ] );
+        add_action( 'admin_bar_menu', [ $this, 'add_admin_bar_node' ], 100 );
 
         // When settings are saved, clear the cached GitHub release data so the
         // next settings page load always performs a fresh update check.
@@ -92,6 +93,26 @@ class AIO_Admin {
             admin_url( 'options-general.php' )
         ) );
         exit;
+    }
+
+    // -------------------------------------------------------------------------
+    // Admin bar node — "Clear Cache" button visible on every page
+    // -------------------------------------------------------------------------
+
+    public function add_admin_bar_node( \WP_Admin_Bar $bar ): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        $url = wp_nonce_url(
+            admin_url( 'admin-post.php?action=aio_clear_cache' ),
+            'aio_clear_cache'
+        );
+        $bar->add_node( [
+            'id'    => 'aio-clear-cache',
+            'title' => '&#x1F5D1; Clear Cache',
+            'href'  => $url,
+            'meta'  => [ 'title' => __( 'Clear AIO Optimizer Cache', 'aio-optimizer' ) ],
+        ] );
     }
 
     public function register_menu(): void {
