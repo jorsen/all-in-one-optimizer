@@ -169,8 +169,15 @@ class AIO_Admin {
         }
         wp_enqueue_style( 'aio-admin', AIO_URL . 'assets/css/admin.css', [], AIO_VERSION );
         wp_enqueue_script( 'aio-admin', AIO_URL . 'assets/js/admin.js', [], AIO_VERSION, true );
+        // Consume the activation transient — show tour once, then it's gone.
+        $show_tour = (bool) get_transient( 'aio_show_tour' );
+        if ( $show_tour ) {
+            delete_transient( 'aio_show_tour' );
+        }
+
         wp_localize_script( 'aio-admin', 'aioAdmin', [
-            'homeUrl' => home_url( '/' ),
+            'homeUrl'  => home_url( '/' ),
+            'showTour' => $show_tour,
         ] );
     }
 

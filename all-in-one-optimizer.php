@@ -3,7 +3,7 @@
  * Plugin Name:       All-in-One Optimizer
  * Plugin URI:        https://github.com/jorsen/all-in-one-optimizer
  * Description:       Debloat, Autoptimize (defer/async), Image Lazy Load, Flying Pages prefetch, and SPA navigation — all in one lightweight plugin.
- * Version:           1.5.9
+ * Version:           1.6.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Jorsen Mejia
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AIO_VERSION', '1.5.9' );
+define( 'AIO_VERSION', '1.6.0' );
 define( 'AIO_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'AIO_URL',     plugin_dir_url( __FILE__ ) );
 define( 'AIO_OPTION',  'aio_optimizer_options' );
@@ -98,10 +98,28 @@ add_action( 'admin_menu', function () {
 } );
 
 /**
- * Activation: set default options.
+ * Activation: set default options, flag to show the tour, and redirect to settings.
  */
 register_activation_hook( __FILE__, function () {
     if ( ! get_option( AIO_OPTION ) ) {
         update_option( AIO_OPTION, [] ); // defaults applied via wp_parse_args
+    }
+    // Signal the settings page to open the walkthrough tour automatically.
+    set_transient( 'aio_show_tour', '1', 60 );
+    // Redirect to the settings page immediately after activation.
+    add_option( 'aio_activation_redirect', '1' );
+} );
+
+/**
+ * Redirect to settings page after activation (runs on the next admin load).
+ */
+add_action( 'admin_init', function () {
+    if ( get_option( 'aio_activation_redirect' ) ) {
+        delete_option( 'aio_activation_redirect' );
+        // Don't redirect during bulk activations.
+        if ( ! isset( $_GET['activate-multi'] ) ) {
+            wp_safe_redirect( admin_url( 'options-general.php?page=aio-optimizer' ) );
+            exit;
+        }
     }
 } );

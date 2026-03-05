@@ -476,13 +476,19 @@
             } );
         }
 
-        // Auto-show tour on first visit (only once, stored in localStorage).
-        try {
-            if ( ! localStorage.getItem( TOUR_STORAGE_KEY ) ) {
-                // Short delay so the page fully renders before the modal appears.
-                setTimeout( openTour, 400 );
-            }
-        } catch ( e ) {}
+        // Auto-show tour:
+        //  1. On plugin activation — PHP sets aioAdmin.showTour via a transient
+        //     (fires every time the plugin is activated, overrides localStorage).
+        //  2. On first-ever visit — localStorage guard prevents repeat shows
+        //     on subsequent visits without re-activating.
+        var shouldShowTour = ( window.aioAdmin && window.aioAdmin.showTour );
+        if ( ! shouldShowTour ) {
+            try { shouldShowTour = ! localStorage.getItem( TOUR_STORAGE_KEY ); } catch ( e ) {}
+        }
+        if ( shouldShowTour ) {
+            // Short delay so the page fully renders before the modal appears.
+            setTimeout( openTour, 400 );
+        }
     } );
 
 } )();
