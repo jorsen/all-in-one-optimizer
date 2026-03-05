@@ -396,7 +396,11 @@ $has_update = $release && version_compare( $release['version'], AIO_VERSION, '>'
                                 </button>
                             </div>
                             <p id="aio-detect-result" class="description" style="margin-top:4px"></p>
-                            <p class="description"><?php esc_html_e( 'Auto-detect scans your homepage to find the correct content wrapper. Or enter manually: #content, main, .site-main', 'aio-optimizer' ); ?></p>
+                            <p class="description">
+                                <?php esc_html_e( 'Auto-detect scans your homepage to find the correct content wrapper. Or enter manually:', 'aio-optimizer' ); ?><br>
+                                <strong><?php esc_html_e( 'Most themes:', 'aio-optimizer' ); ?></strong> <code>#content, main, .site-main</code><br>
+                                <strong><?php esc_html_e( 'Hello + Elementor (canvas/full-width):', 'aio-optimizer' ); ?></strong> <code>[data-elementor-type="wp-page"]</code>
+                            </p>
                         </td>
                     </tr>
                     <tr>

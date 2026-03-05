@@ -24,8 +24,9 @@
     }
 
     const cfg          = window.aioSpaConfig || {};
-    // Extended selector covers the most common WordPress theme content wrappers.
-    const rawSel       = cfg.selector  || '#content, #main-content, #primary, .site-main, .main-content, .content-area, main';
+    // Extended selector covers the most common WordPress theme content wrappers,
+    // including Elementor full-page / canvas templates (Hello theme + Elementor).
+    const rawSel       = cfg.selector  || '#content, #main-content, #primary, .site-main, .main-content, .content-area, main, [data-elementor-type="wp-page"]';
     const excludes     = cfg.exclude   || [];
     const adminPath    = cfg.adminPath || '/wp-admin';
     const REDUCED_MOTION = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
