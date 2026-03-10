@@ -419,6 +419,7 @@
         if ( overlay ) {
             overlay.classList.remove( 'aio-tour-visible' );
         }
+        document.body.style.overflow = '';
         try { localStorage.setItem( TOUR_STORAGE_KEY, '1' ); } catch ( e ) {}
     }
 
