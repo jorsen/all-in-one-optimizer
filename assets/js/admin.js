@@ -159,7 +159,11 @@
         if ( result ) result.textContent = '';
 
         // Ordered from most specific to most generic — first large match wins.
+        // Elementor selectors are tested first: Canvas / full-width templates have
+        // no #content wrapper and would otherwise return no match.
         const CANDIDATES = [
+            '[data-elementor-type="wp-page"]',
+            '[data-elementor-type="wp-post"]',
             '#content', '#main-content', '#primary', '#main',
             '.site-main', '.main-content', '.content-area', '.entry-content',
             'main', 'article',

@@ -480,6 +480,15 @@
             // supported; fall back to a simple fade for older browsers.
             const doSwap = function () {
                 current.el.innerHTML = newContent.el.innerHTML;
+
+                // Sync outer-element attributes that page builders store per-page
+                // (e.g. Elementor stores data-elementor-id on the wrapper element).
+                // Without this, Elementor's re-init looks up stale page data.
+                [ 'data-elementor-id', 'data-elementor-type', 'class' ].forEach( function ( attr ) {
+                    const val = newContent.el.getAttribute( attr );
+                    if ( val !== null ) current.el.setAttribute( attr, val );
+                } );
+
                 heroSwaps.forEach( function ( swap ) {
                     try { swap.cur.outerHTML = swap.html; } catch ( e ) {}
                 } );
@@ -544,15 +553,30 @@
                 const el = document.querySelector( current.sel );
                 const $el = window.jQuery ? jQuery( el ) : null;
 
-                // Elementor — re-run element handlers on the new content area.
-                if ( window.elementorFrontend ) {
+                // Elementor — re-run element handlers on every widget individually.
+                // Calling the global hook on the whole container is not sufficient;
+                // each widget needs its own typed hook so sliders, forms, counters,
+                // motion effects, etc. all restart correctly after a content swap.
+                if ( window.elementorFrontend && window.jQuery ) {
                     try {
-                        if ( elementorFrontend.hooks ) {
-                            elementorFrontend.hooks.doAction( 'frontend/element_ready/global', $el, jQuery );
-                        }
-                        // Elementor Pro widgets (motion effects, sticky, etc.).
+                        var $container = jQuery( el );
+                        $container
+                            .find( '[data-element_type]' )
+                            .addBack( '[data-element_type]' )
+                            .each( function () {
+                                var $widget = jQuery( this );
+                                var type    = $widget.data( 'element_type' );
+                                if ( ! type ) return;
+                                try {
+                                    if ( elementorFrontend.hooks ) {
+                                        elementorFrontend.hooks.doAction( 'frontend/element_ready/' + type, $widget, jQuery );
+                                        elementorFrontend.hooks.doAction( 'frontend/element_ready/global', $widget, jQuery );
+                                    }
+                                } catch ( e ) {}
+                            } );
+                        // Elementor Pro: motion effects, sticky, scroll-snap.
                         if ( elementorFrontend.elementsHandler ) {
-                            elementorFrontend.elementsHandler.runReadyTrigger( $el );
+                            try { elementorFrontend.elementsHandler.runReadyTrigger( jQuery( el ) ); } catch ( e ) {}
                         }
                     } catch ( e ) {}
                 }
