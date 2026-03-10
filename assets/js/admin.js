@@ -376,6 +376,15 @@
         document.getElementById( 'aio-tour-title' ).textContent = step.title;
         document.getElementById( 'aio-tour-body' ).innerHTML    = step.body;
 
+        // Replay the entry animation on every open (not just first render).
+        var modal = document.getElementById( 'aio-tour-modal' );
+        if ( modal && n === 0 ) {
+            modal.style.animation = 'none';
+            // eslint-disable-next-line no-unused-expressions
+            modal.offsetHeight; // force reflow
+            modal.style.animation = '';
+        }
+
         // Dots.
         document.querySelectorAll( '.aio-tour-dot' ).forEach( function ( d, i ) {
             d.classList.toggle( 'aio-tour-dot--active', i === n );
@@ -394,6 +403,7 @@
 
         var ov = document.getElementById( 'aio-tour-overlay' );
         ov.classList.add( 'aio-tour-visible' );
+        document.body.style.overflow = 'hidden';
         tourOpenedAt = Date.now();
     }
 
