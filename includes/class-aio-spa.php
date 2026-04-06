@@ -13,6 +13,10 @@ class AIO_SPA {
         if ( is_admin() ) {
             return;
         }
+        // Elementor editor iframe — bail so SPA doesn't interfere with the preview.
+        if ( isset( $_GET['elementor-preview'] ) ) {
+            return;
+        }
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 
         // Chrome 98+ Private Network Access: when the site runs on a local IP

@@ -418,7 +418,7 @@
                 '#page-header', '#banner', '#hero',
                 '.page-header', '.hero-section', '.page-hero',
                 '.post-hero', '.site-hero', '.entry-banner', '.page-title-area',
-                '.elementor-location-footer',
+                '.elementor-location-header', '.elementor-location-footer',
             ].join( ', ' );
 
             const heroSwaps = [];
@@ -594,6 +594,23 @@
                 // Divi.
                 if ( window.ET_Builder ) {
                     try { ET_Builder.run(); } catch ( e ) {}
+                }
+
+                // Bricks Builder — signal that new query-loop content is ready.
+                if ( window.bricksData ) {
+                    try {
+                        document.dispatchEvent( new CustomEvent( 'bricks/ajax/query_result/displayed' ) );
+                    } catch ( e ) {}
+                }
+
+                // Brizy.
+                if ( window.Brizy && typeof window.Brizy.init === 'function' ) {
+                    try { window.Brizy.init(); } catch ( e ) {}
+                }
+
+                // Oxygen Builder.
+                if ( window.CTFrontend && typeof window.CTFrontend.init === 'function' ) {
+                    try { window.CTFrontend.init(); } catch ( e ) {}
                 }
             } );
 

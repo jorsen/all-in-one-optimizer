@@ -24,6 +24,10 @@ class AIO_Lazy_Load {
         if ( is_admin() ) {
             return;
         }
+        // Elementor editor iframe — bail so lazy load doesn't break the preview.
+        if ( isset( $_GET['elementor-preview'] ) ) {
+            return;
+        }
 
         $images_active  = $this->opts['lazy_images']  ?? 0;
         $bg_active      = $this->opts['lazy_bg']      ?? 0;
