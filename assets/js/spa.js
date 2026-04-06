@@ -586,11 +586,12 @@
                     try { window.vc_js(); } catch ( e ) {}
                 }
 
-                // Beaver Builder — FLBuilderLayout.init() re-attaches scroll animation
-                // listeners (opacity 0 → visible) and reinitializes backgrounds/forms.
-                // _initModules() alone is insufficient and leaves animated sections hidden.
-                if ( window.FLBuilderLayout ) {
-                    try { FLBuilderLayout.init(); } catch ( e ) {}
+                // Beaver Builder — scope init to the swapped container only.
+                // FLBuilderLayout.init() with no argument destroys the entire page
+                // including Theme Builder header/footer, resetting sticky headers and
+                // nav dropdowns. Passing the content element limits reinit to that area.
+                if ( window.FLBuilderLayout && $el ) {
+                    try { FLBuilderLayout.init( $el ); } catch ( e ) {}
                 } else if ( window.FLBuilder ) {
                     try { FLBuilder._initModules(); } catch ( e ) {}
                 }
