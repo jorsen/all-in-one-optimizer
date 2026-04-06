@@ -586,8 +586,12 @@
                     try { window.vc_js(); } catch ( e ) {}
                 }
 
-                // Beaver Builder.
-                if ( window.FLBuilder ) {
+                // Beaver Builder — FLBuilderLayout.init() re-attaches scroll animation
+                // listeners (opacity 0 → visible) and reinitializes backgrounds/forms.
+                // _initModules() alone is insufficient and leaves animated sections hidden.
+                if ( window.FLBuilderLayout ) {
+                    try { FLBuilderLayout.init(); } catch ( e ) {}
+                } else if ( window.FLBuilder ) {
                     try { FLBuilder._initModules(); } catch ( e ) {}
                 }
 
