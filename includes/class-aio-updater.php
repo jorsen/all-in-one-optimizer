@@ -296,8 +296,10 @@ class AIO_Updater {
         // GitHub archive zips extract to "{repo}-{tag}/" e.g. "all-in-one-optimizer-1.6.5/".
         // Match on the folder name prefix so this works regardless of how hook_extra
         // is populated (manual update, auto-update, bulk update all differ).
+        // GitHub archive zips name the root folder "{repo}-{tag}/".
+        // str_starts_with guards correctly; strpos would misfire on false !== 0.
         $expected_prefix = trailingslashit( $remote_source ) . self::PLUGIN_SLUG . '-';
-        if ( strpos( $source, $expected_prefix ) !== 0 ) {
+        if ( ! str_starts_with( $source, $expected_prefix ) ) {
             return $source;
         }
 
