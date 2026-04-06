@@ -24,8 +24,7 @@ class AIO_Lazy_Load {
         if ( is_admin() ) {
             return;
         }
-        // Elementor editor iframe — bail so lazy load doesn't break the preview.
-        if ( isset( $_GET['elementor-preview'] ) ) {
+        if ( aio_is_builder_preview() ) {
             return;
         }
 

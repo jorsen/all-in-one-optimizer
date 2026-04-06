@@ -13,8 +13,7 @@ class AIO_SPA {
         if ( is_admin() ) {
             return;
         }
-        // Elementor editor iframe — bail so SPA doesn't interfere with the preview.
-        if ( isset( $_GET['elementor-preview'] ) ) {
+        if ( aio_is_builder_preview() ) {
             return;
         }
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );

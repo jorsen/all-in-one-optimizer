@@ -418,7 +418,7 @@
                 '#page-header', '#banner', '#hero',
                 '.page-header', '.hero-section', '.page-hero',
                 '.post-hero', '.site-hero', '.entry-banner', '.page-title-area',
-                '.elementor-location-header', '.elementor-location-footer',
+                '.elementor-location-footer',
             ].join( ', ' );
 
             const heroSwaps = [];
