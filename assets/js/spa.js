@@ -590,8 +590,14 @@
                 // FLBuilderLayout.init() with no argument destroys the entire page
                 // including Theme Builder header/footer, resetting sticky headers and
                 // nav dropdowns. Passing the content element limits reinit to that area.
+                // After init, dispatch scroll so BB checks .fl-animation elements already
+                // in the viewport — without it they stay at opacity:0 because the scroll
+                // listener never fires when the page doesn't need to scroll.
                 if ( window.FLBuilderLayout && $el ) {
-                    try { FLBuilderLayout.init( $el ); } catch ( e ) {}
+                    try {
+                        FLBuilderLayout.init( $el );
+                        window.dispatchEvent( new Event( 'scroll' ) );
+                    } catch ( e ) {}
                 } else if ( window.FLBuilder ) {
                     try { FLBuilder._initModules(); } catch ( e ) {}
                 }
